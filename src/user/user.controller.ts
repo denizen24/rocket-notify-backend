@@ -1,5 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
-import { Ctx, Update, Command, Action, Message } from 'nestjs-telegraf';
+import { Ctx, Update, Command, Action, Message, Hears } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { UserService } from './user.service';
 
@@ -9,6 +9,14 @@ export class UserController {
   private readonly logger = new Logger(UserController.name);
 
   constructor(private readonly userService: UserService) {}
+
+  @Hears(/.*/)  // Ловит все текстовые сообщения (низкий приоритет)
+  async catchAll(@Ctx() ctx: Context) {
+    if (ctx.message && 'text' in ctx.message) {
+      this.logger.log(`📱 Получено сообщение: ${ctx.message.text}`);
+    }
+    // Не отвечаем автоматически, чтобы не мешать командам
+  }
 
   @Command('start')
   async start(@Ctx() ctx: Context) {
