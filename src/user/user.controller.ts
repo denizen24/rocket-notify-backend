@@ -10,12 +10,16 @@ export class UserController {
 
   constructor(private readonly userService: UserService) {}
 
-  @Hears(/.*/)  // Ловит все текстовые сообщения (низкий приоритет)
+  @Hears(/.*/)  // Ловит все текстовые сообщения для отладки (низкий приоритет)
   async catchAll(@Ctx() ctx: Context) {
+    this.logger.log(`📱 UPDATE: ${JSON.stringify(ctx.update, null, 2)}`);
     if (ctx.message && 'text' in ctx.message) {
       this.logger.log(`📱 Получено сообщение: ${ctx.message.text}`);
+      // Отвечаем только если это не команда (команды обрабатываются отдельно)
+      if (!ctx.message.text.startsWith('/')) {
+        await ctx.reply(`🤖 Бот работает! Получил: ${ctx.message.text}`);
+      }
     }
-    // Не отвечаем автоматически, чтобы не мешать командам
   }
 
   @Command('start')

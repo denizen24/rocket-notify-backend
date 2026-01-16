@@ -3,6 +3,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { session } from 'telegraf';
 import { BotService } from './bot.service';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { BotService } from './bot.service';
       },
       inject: [ConfigService],
     }),
+    UserModule, // Импортируем UserModule, чтобы UserController мог использовать декораторы nestjs-telegraf
   ],
   providers: [BotService], 
   exports: [BotService],
