@@ -43,7 +43,8 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       });
     }, this.intervalMs);
 
-    this.logger.log(`Polling запущен. Интервал: ${Math.round(this.intervalMs / 60000)} мин.`);
+    this.logger.log('[🚀 Polling started]');
+    this.logger.log(`Интервал: ${Math.round(this.intervalMs / 60000)} мин.`);
   }
 
   private stop(): void {
@@ -63,8 +64,13 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       await this.rocketChatService.ensureAuthenticated();
       const unread = await this.rocketChatService.getUnreadCount();
 
+      this.logger.log(
+        `[📊 Unread: total=${unread.total}]`
+      );
+
       if (unread.total > this.lastUnreadTotal) {
         await this.telegramService.sendUnreadAlert(unread.total);
+        this.logger.log(`[📱 Sent alert: unread=${unread.total}]`);
       }
 
       this.lastUnreadTotal = unread.total;
