@@ -129,7 +129,8 @@ export class RocketChatService {
       this.authToken = authToken;
       this.userId = userId;
       this.instanceId = instanceId ?? null;
-      this.logger.log('Успешная авторизация в Rocket.Chat.');
+      const userLabel = typeof userId === 'string' ? userId.slice(0, 6) : 'unknown';
+      this.logger.log(`[✅ Авторизован в Rocket.Chat: ${userLabel}]`);
     } catch (error) {
       this.logger.error('Ошибка авторизации в Rocket.Chat.', error as Error);
       throw error;
