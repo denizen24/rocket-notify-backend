@@ -1,12 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
-import { TelegramService } from './telegram/telegram.service';
+import { UserService } from './user/user.service';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private telegram: TelegramService,
+    private readonly userService: UserService
   ) {}
 
   @Get()
@@ -14,9 +14,25 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('test-telegram')
-  async testTelegram() {
-    await this.telegram.sendMessage('🧪 Backend работает! Отправка из NestJS.');
-    return { status: 'sent' };
+  @Get('users')
+  async getUsers() {
+    const users = await this.userService.getAllEnabledUsers();
+    return users.map((u) => ({
+      id: u.id,
+      telegramId: u.telegramId,
+      rcServer: u.rcServer,
+      rcUser: u.rcUser,
+      enabled: u.enabled,
+      lastUnread: u.lastUnread,
+      createdAt: u.createdAt,
+    }));
+  }
+
+  @Post('users/:telegramId/enable')
+  async toggleEnabled(
+    @Param('telegramId') telegramId: string,
+    @Body('enabled') enabled: boolean
+  ) {
+    return this.userService.toggleEnabled(telegramId, enabled);
   }
 }
