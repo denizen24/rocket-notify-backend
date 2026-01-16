@@ -1,5 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from 'axios';
+
+interface Subscription {
+  t?: string;
+  unread?: number;
+  unreadCount?: number;
+  msgs?: number;
+  userMentions?: number;
+  groupMentions?: number;
+  tunread?: number;
+}
 
 export interface UnreadCount {
   total: number;
@@ -45,22 +55,33 @@ export class RocketChatService {
         },
       );
 
-      const authToken =
-        response.headers['x-auth-token'] ??
-        response.data?.data?.authToken ??
-        response.data?.authToken ??
-        response.data?.data?.['X-Auth-Token'] ??
-        response.data?.['X-Auth-Token'];
-      const userId =
-        response.headers['x-user-id'] ??
-        response.data?.data?.userId ??
-        response.data?.userId ??
-        response.data?.data?.['X-User-Id'] ??
-        response.data?.['X-User-Id'];
-      const instanceId =
-        response.headers['x-instance-id'] ??
-        response.data?.data?.instanceId ??
-        response.data?.instanceId;
+      const authToken: string | undefined =
+        (response.headers['x-auth-token'] as string | undefined) ??
+        (response.data as { data?: { authToken?: string }; authToken?: string })
+          ?.data?.authToken ??
+        (response.data as { authToken?: string })?.authToken ??
+        (response.data as { data?: { 'X-Auth-Token'?: string } })?.data?.[
+          'X-Auth-Token'
+        ] ??
+        (response.data as { 'X-Auth-Token'?: string })?.['X-Auth-Token'];
+      const userId: string | undefined =
+        (response.headers['x-user-id'] as string | undefined) ??
+        (response.data as { data?: { userId?: string }; userId?: string })?.data
+          ?.userId ??
+        (response.data as { userId?: string })?.userId ??
+        (response.data as { data?: { 'X-User-Id'?: string } })?.data?.[
+          'X-User-Id'
+        ] ??
+        (response.data as { 'X-User-Id'?: string })?.['X-User-Id'];
+      const instanceId: string | undefined =
+        (response.headers['x-instance-id'] as string | undefined) ??
+        (
+          response.data as {
+            data?: { instanceId?: string };
+            instanceId?: string;
+          }
+        )?.data?.instanceId ??
+        (response.data as { instanceId?: string })?.instanceId;
 
       if (!authToken || !userId) {
         this.logger.error('Не получены токены авторизации от Rocket.Chat.');
@@ -87,11 +108,14 @@ export class RocketChatService {
     authToken: string,
     userId: string,
     instanceId?: string | null,
-  ): Promise<any[]> {
+  ): Promise<Subscription[]> {
     const http = this.createHttpClient(server);
     try {
       const headers = this.getAuthHeaders(authToken, userId, instanceId);
-      const response = await http.get('/api/v1/subscriptions.get', { headers });
+      const response = await http.get<{
+        subscriptions?: Subscription[];
+        update?: Subscription[];
+      }>('/api/v1/subscriptions.get', { headers });
       const data = response.data ?? {};
       const subscriptions = data.subscriptions ?? data.update ?? [];
       return Array.isArray(subscriptions) ? subscriptions : [];
@@ -126,7 +150,7 @@ export class RocketChatService {
       return Number.isFinite(numeric) ? numeric : 0;
     };
 
-    subscriptions.forEach((sub: any) => {
+    subscriptions.forEach((sub: Subscription) => {
       const baseUnread = toNumber(
         sub.unread ?? sub.unreadCount ?? sub.msgs ?? 0,
       );

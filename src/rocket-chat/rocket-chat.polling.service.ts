@@ -78,7 +78,7 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
             user.rcServer,
             user.rcToken,
             user.rcUserId,
-            user.rcInstanceId,
+            user.rcInstanceId ?? undefined,
           );
 
           this.logger.log(

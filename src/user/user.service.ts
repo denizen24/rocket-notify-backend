@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
+import { User } from './user.types';
 
 @Injectable()
 export class UserService {
@@ -11,12 +12,12 @@ export class UserService {
     private readonly rocketChatService: RocketChatService,
   ) {}
 
-  findOrCreateTelegramUser(telegramId: string) {
-    return (this.prisma as any).user.upsert({
+  async findOrCreateTelegramUser(telegramId: string): Promise<User> {
+    return this.prisma.user.upsert({
       where: { telegramId },
       update: {},
       create: { telegramId, enabled: true },
-    });
+    }) as Promise<User>;
   }
 
   async updateRocketChatCreds(
@@ -27,7 +28,7 @@ export class UserService {
   ): Promise<void> {
     try {
       const loginRes = await this.rocketChatService.login(server, user, pass);
-      await (this.prisma as any).user.update({
+      await this.prisma.user.update({
         where: { telegramId },
         data: {
           rcServer: server,
@@ -49,23 +50,23 @@ export class UserService {
     }
   }
 
-  async getAllEnabledUsers() {
-    return (this.prisma as any).user.findMany({
+  async getAllEnabledUsers(): Promise<User[]> {
+    return this.prisma.user.findMany({
       where: { enabled: true },
-    });
+    }) as Promise<User[]>;
   }
 
-  async updateLastUnread(userId: string, lastUnread: number) {
-    await (this.prisma as any).user.update({
+  async updateLastUnread(userId: string, lastUnread: number): Promise<void> {
+    await this.prisma.user.update({
       where: { id: userId },
       data: { lastUnread },
     });
   }
 
-  async toggleEnabled(telegramId: string, enabled: boolean) {
-    return (this.prisma as any).user.update({
+  async toggleEnabled(telegramId: string, enabled: boolean): Promise<User> {
+    return this.prisma.user.update({
       where: { telegramId },
       data: { enabled },
-    });
+    }) as Promise<User>;
   }
 }
