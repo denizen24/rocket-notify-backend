@@ -8,10 +8,10 @@ export class UserService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly rocketChatService: RocketChatService
+    private readonly rocketChatService: RocketChatService,
   ) {}
 
-  async findOrCreateTelegramUser(telegramId: string) {
+  findOrCreateTelegramUser(telegramId: string) {
     return (this.prisma as any).user.upsert({
       where: { telegramId },
       update: {},
@@ -23,7 +23,7 @@ export class UserService {
     telegramId: string,
     server: string,
     user: string,
-    pass: string
+    pass: string,
   ): Promise<void> {
     try {
       const loginRes = await this.rocketChatService.login(server, user, pass);
@@ -37,9 +37,14 @@ export class UserService {
           rcInstanceId: loginRes.instanceId,
         },
       });
-      this.logger.log(`[✅ Обновлены креды Rocket.Chat для пользователя: ${telegramId}]`);
+      this.logger.log(
+        `[✅ Обновлены креды Rocket.Chat для пользователя: ${telegramId}]`,
+      );
     } catch (error) {
-      this.logger.error(`[❌ Ошибка обновления кредов для ${telegramId}]`, error as Error);
+      this.logger.error(
+        `[❌ Ошибка обновления кредов для ${telegramId}]`,
+        error as Error,
+      );
       throw error;
     }
   }

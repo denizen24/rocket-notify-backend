@@ -25,7 +25,11 @@ export class RocketChatService {
     });
   }
 
-  async login(server: string, user: string, password: string): Promise<LoginResult> {
+  async login(
+    server: string,
+    user: string,
+    password: string,
+  ): Promise<LoginResult> {
     const http = this.createHttpClient(server);
     try {
       const response = await http.post(
@@ -38,7 +42,7 @@ export class RocketChatService {
           headers: {
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       const authToken =
@@ -63,7 +67,8 @@ export class RocketChatService {
         throw new Error('Rocket.Chat login failed: missing auth headers');
       }
 
-      const userLabel = typeof userId === 'string' ? userId.slice(0, 6) : 'unknown';
+      const userLabel =
+        typeof userId === 'string' ? userId.slice(0, 6) : 'unknown';
       this.logger.log(`[✅ Авторизован в Rocket.Chat: ${userLabel}]`);
 
       return {
@@ -81,7 +86,7 @@ export class RocketChatService {
     server: string,
     authToken: string,
     userId: string,
-    instanceId?: string | null
+    instanceId?: string | null,
   ): Promise<any[]> {
     const http = this.createHttpClient(server);
     try {
@@ -92,7 +97,9 @@ export class RocketChatService {
       return Array.isArray(subscriptions) ? subscriptions : [];
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        this.logger.warn('Сессия Rocket.Chat истекла. Требуется повторная авторизация.');
+        this.logger.warn(
+          'Сессия Rocket.Chat истекла. Требуется повторная авторизация.',
+        );
       }
       throw error;
     }
@@ -102,9 +109,14 @@ export class RocketChatService {
     server: string,
     authToken: string,
     userId: string,
-    instanceId?: string | null
+    instanceId?: string | null,
   ): Promise<UnreadCount> {
-    const subscriptions = await this.getSubscriptions(server, authToken, userId, instanceId);
+    const subscriptions = await this.getSubscriptions(
+      server,
+      authToken,
+      userId,
+      instanceId,
+    );
     let channels = 0;
     let im = 0;
     let groups = 0;
@@ -115,7 +127,9 @@ export class RocketChatService {
     };
 
     subscriptions.forEach((sub: any) => {
-      const baseUnread = toNumber(sub.unread ?? sub.unreadCount ?? sub.msgs ?? 0);
+      const baseUnread = toNumber(
+        sub.unread ?? sub.unreadCount ?? sub.msgs ?? 0,
+      );
       const mentionUnread =
         toNumber(sub.userMentions ?? 0) + toNumber(sub.groupMentions ?? 0);
       const threadUnread = toNumber(sub.tunread ?? 0);
@@ -141,7 +155,7 @@ export class RocketChatService {
   private getAuthHeaders(
     authToken: string,
     userId: string,
-    instanceId?: string | null
+    instanceId?: string | null,
   ): Record<string, string> {
     const headers: Record<string, string> = {
       'X-Auth-Token': authToken,

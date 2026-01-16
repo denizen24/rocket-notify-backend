@@ -22,12 +22,19 @@ export class TelegramService {
       });
       this.logger.log(`[📱 Отправлено сообщение пользователю: ${chatId}]`);
     } catch (error) {
-      this.logger.error(`[❌ Ошибка отправки сообщения пользователю ${chatId}]`, error as Error);
+      this.logger.error(
+        `[❌ Ошибка отправки сообщения пользователю ${chatId}]`,
+        error as Error,
+      );
       throw error;
     }
   }
 
-  async sendUnreadAlert(chatId: string, unreadCount: number, mentions?: number) {
+  async sendUnreadAlert(
+    chatId: string,
+    unreadCount: number,
+    mentions?: number,
+  ) {
     let message = `🚨 Rocket.Chat уведомления\n\n🔔 Непрочитано: ${unreadCount} 📩\n`;
     if (mentions !== undefined && mentions > 0) {
       message += `💬 Упоминаний: ${mentions}\n`;

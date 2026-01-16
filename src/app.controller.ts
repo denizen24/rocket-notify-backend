@@ -6,7 +6,7 @@ import { UserService } from './user/user.service';
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
   ) {}
 
   @Get()
@@ -31,7 +31,7 @@ export class AppController {
   @Post('users/:telegramId/enable')
   async toggleEnabled(
     @Param('telegramId') telegramId: string,
-    @Body('enabled') enabled: boolean
+    @Body('enabled') enabled: boolean,
   ) {
     return this.userService.toggleEnabled(telegramId, enabled);
   }

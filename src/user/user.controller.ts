@@ -28,7 +28,7 @@ export class UserController {
         reply_markup: {
           inline_keyboard: [[{ text: '📝 Настроить', callback_data: 'setup' }]],
         },
-      }
+      },
     );
   }
 
@@ -49,7 +49,12 @@ export class UserController {
 
     try {
       await ctx.reply('⏳ Подключаюсь к Rocket.Chat...');
-      await this.userService.updateRocketChatCreds(telegramId, server, user, pass);
+      await this.userService.updateRocketChatCreds(
+        telegramId,
+        server,
+        user,
+        pass,
+      );
       await ctx.reply('✅ Подписка создана! Уведомления будут приходить сюда.');
     } catch (e) {
       this.logger.error(`Ошибка авторизации для ${telegramId}`, e as Error);
@@ -64,8 +69,7 @@ export class UserController {
       '📝 Для настройки используй команду:\n' +
         '/login <server> <user> <pass>\n\n' +
         'Пример:\n' +
-        '/login https://rocketchat.medcontrol.cloud john pass123'
+        '/login https://rocketchat.medcontrol.cloud john pass123',
     );
   }
 }
-

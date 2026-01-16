@@ -8,7 +8,8 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(private readonly configService: ConfigService) {
-    const databaseUrl = configService.get<string>('DATABASE_URL') || 'file:./dev.db';
+    const databaseUrl =
+      configService.get<string>('DATABASE_URL') || 'file:./dev.db';
     super({
       datasourceUrl: databaseUrl,
     } as any);

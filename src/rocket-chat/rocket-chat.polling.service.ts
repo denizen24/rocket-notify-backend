@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { RocketChatService } from './rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UserService } from '../user/user.service';
@@ -13,7 +18,7 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly rocketChatService: RocketChatService,
     private readonly telegramService: TelegramService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
   ) {}
 
   onModuleInit(): void {
@@ -40,7 +45,9 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
     }, this.defaultIntervalMs);
 
     this.logger.log('[🚀 Polling started]');
-    this.logger.log(`Интервал: ${Math.round(this.defaultIntervalMs / 60000)} мин.`);
+    this.logger.log(
+      `Интервал: ${Math.round(this.defaultIntervalMs / 60000)} мин.`,
+    );
   }
 
   private stop(): void {
@@ -71,27 +78,27 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
             user.rcServer,
             user.rcToken,
             user.rcUserId,
-            user.rcInstanceId
+            user.rcInstanceId,
           );
 
           this.logger.log(
-            `[📊 User ${user.telegramId}: total=${unread.total}]`
+            `[📊 User ${user.telegramId}: total=${unread.total}]`,
           );
 
           if (unread.total > user.lastUnread) {
             await this.telegramService.sendUnreadAlert(
               user.telegramId,
-              unread.total
+              unread.total,
             );
             await this.userService.updateLastUnread(user.id, unread.total);
             this.logger.log(
-              `[📱 Sent alert to ${user.telegramId}: unread=${unread.total}]`
+              `[📱 Sent alert to ${user.telegramId}: unread=${unread.total}]`,
             );
           }
         } catch (error) {
           this.logger.error(
             `[❌ Polling failed for user ${user.telegramId}]`,
-            error as Error
+            error as Error,
           );
         }
       }
