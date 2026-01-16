@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
 import { User } from './user.types';
@@ -9,6 +9,7 @@ export class UserService {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => RocketChatService))
     private readonly rocketChatService: RocketChatService,
   ) {}
 

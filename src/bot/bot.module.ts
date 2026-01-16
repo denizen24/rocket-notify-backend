@@ -1,16 +1,23 @@
 import { Module } from '@nestjs/common';
 import { TelegrafModule } from 'nestjs-telegraf';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { session } from 'telegraf';
 
 @Module({
   imports: [
     TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
       botName: 'RocketNotifyBot',
-      useFactory: (config: ConfigService) => ({
-        token: config.get<string>('TELEGRAM_BOT_TOKEN'),
-        middlewares: [session()],
-      }),
+      useFactory: (config: ConfigService) => {
+        const token = config.get<string>('TELEGRAM_BOT_TOKEN');
+        if (!token) {
+          throw new Error('Missing required env: TELEGRAM_BOT_TOKEN');
+        }
+        return {
+          token,
+          middlewares: [session()],
+        };
+      },
       inject: [ConfigService],
     }),
   ],

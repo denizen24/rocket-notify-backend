@@ -3,6 +3,8 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { RocketChatService } from './rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
@@ -18,6 +20,7 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly rocketChatService: RocketChatService,
     private readonly telegramService: TelegramService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
   ) {}
 
