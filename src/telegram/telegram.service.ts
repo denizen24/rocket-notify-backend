@@ -8,8 +8,8 @@ export class TelegramService {
   private readonly channelId: string;
 
   constructor(private configService: ConfigService) {
-    this.botToken = this.configService.get('TELEGRAM_BOT_TOKEN');
-    this.channelId = this.configService.get('TELEGRAM_CHANNEL_ID');
+    this.botToken = this.getRequired('TELEGRAM_BOT_TOKEN');
+    this.channelId = this.getRequired('TELEGRAM_CHANNEL_ID');
   }
 
   async sendMessage(text: string): Promise<void> {
@@ -23,7 +23,15 @@ export class TelegramService {
   }
 
   async sendUnreadAlert(unreadCount: number) {
-    const message = `🚨 Rocket.Chat уведомления\n\n📩 Непрочитано: ${unreadCount}\n🔔`;
+    const message = `🚨 Rocket.Chat уведомления\n\n🔔 Непрочитано: ${unreadCount} 📩\n`;
     await this.sendMessage(message);
+  }
+
+  private getRequired(key: string): string {
+    const value = this.configService.get<string>(key);
+    if (!value) {
+      throw new Error(`Missing required env: ${key}`);
+    }
+    return value;
   }
 }
