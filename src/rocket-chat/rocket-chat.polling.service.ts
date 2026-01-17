@@ -9,6 +9,7 @@ import {
 import { RocketChatService } from './rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UserService } from '../user/user.service';
+import { QueueService } from '../queue/queue.service';
 
 @Injectable()
 export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
@@ -22,6 +23,7 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
     private readonly telegramService: TelegramService,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
+    private readonly queueService: QueueService,
   ) {}
 
   onModuleInit(): void {
@@ -70,6 +72,14 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       const users = await this.userService.getAllEnabledUsers();
       this.logger.log(`[📋 Проверка ${users.length} пользователей]`);
 
+      // Если пользователей больше 50, используем очередь
+      if (users.length > 50) {
+        this.logger.log('[📦 Использование очереди для polling]');
+        await this.queueService.schedulePollingForAllUsers(users);
+        return;
+      }
+
+      // Для малого количества пользователей выполняем синхронно
       for (const user of users) {
         if (!user.rcServer || !user.rcToken || !user.rcUserId) {
           this.logger.warn(`[⚠️ Пользователь ${user.telegramId} не настроен]`);

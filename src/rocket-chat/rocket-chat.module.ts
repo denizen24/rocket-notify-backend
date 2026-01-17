@@ -2,11 +2,15 @@ import { Module, forwardRef } from '@nestjs/common';
 import { RocketChatService } from './rocket-chat.service';
 import { RocketChatPollingService } from './rocket-chat.polling.service';
 import { TelegramModule } from '../telegram/telegram.module';
-import { PrismaModule } from '../prisma/prisma.module';
 import { UserModule } from '../user/user.module';
+import { QueueModule } from '../queue/queue.module';
 
 @Module({
-  imports: [TelegramModule, PrismaModule, forwardRef(() => UserModule)],
+  imports: [
+    TelegramModule,
+    forwardRef(() => UserModule),
+    QueueModule,
+  ],
   providers: [RocketChatService, RocketChatPollingService],
   exports: [RocketChatService],
 })

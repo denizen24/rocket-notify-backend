@@ -16,10 +16,25 @@ import { UserController } from '../user/user.controller';
         if (!token) {
           throw new Error('Missing required env: TELEGRAM_BOT_TOKEN');
         }
-        return {
+        
+        const webhookUrl = config.get<string>('TELEGRAM_WEBHOOK_URL');
+        const webhookSecret = config.get<string>('TELEGRAM_WEBHOOK_SECRET');
+        
+        // Если указан webhook URL, используем webhook, иначе polling
+        const options: any = {
           token,
           middlewares: [session()],
         };
+        
+        if (webhookUrl && webhookSecret) {
+          options.webhook = {
+            domain: webhookUrl,
+            path: '/webhook/rocketnotify',
+            secretToken: webhookSecret,
+          };
+        }
+        
+        return options;
       },
       inject: [ConfigService],
     }),

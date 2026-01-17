@@ -2,6 +2,10 @@ import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { UserService } from './user/user.service';
 import { User } from './database/user.schema';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 interface UserResponse {
   id: string;
@@ -18,11 +22,39 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly userService: UserService,
+    @InjectConnection() private readonly mongoConnection: Connection,
+    @InjectQueue('polling') private readonly pollingQueue: Queue,
   ) {}
 
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @Get('healthz')
+  async healthCheck() {
+    const mongoStatus = this.mongoConnection.readyState === 1 ? 'ok' : 'error';
+    const redisStatus = await this.checkRedis();
+
+    return {
+      status: mongoStatus === 'ok' && redisStatus === 'ok' ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      services: {
+        mongodb: mongoStatus,
+        redis: redisStatus,
+      },
+    };
+  }
+
+  private async checkRedis(): Promise<'ok' | 'error'> {
+    try {
+      const client = this.pollingQueue.client;
+      await client.ping();
+      return 'ok';
+    } catch {
+      return 'error';
+    }
   }
 
   @Get('users')

@@ -3,7 +3,26 @@ import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+
+  // Graceful shutdown
+  const gracefulShutdown = async (signal: string) => {
+    Logger.log(`📴 Получен сигнал ${signal}, завершение работы...`);
+    try {
+      await app.close();
+      Logger.log('✅ Приложение корректно завершено');
+      process.exit(0);
+    } catch (error) {
+      Logger.error('❌ Ошибка при завершении:', error);
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
   const port = process.env.PORT ?? 3000;
   try {
     await app.listen(port);
