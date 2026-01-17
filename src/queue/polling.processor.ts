@@ -1,5 +1,5 @@
 import { Processor, Process } from '@nestjs/bull';
-import { Job } from 'bull';
+import type { Job } from 'bull';
 import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';

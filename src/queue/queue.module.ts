@@ -16,9 +16,7 @@ import { TelegramModule } from '../telegram/telegram.module';
           configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
 
         return {
-          redis: {
-            url: redisUrl,
-          },
+          redis: redisUrl,
         };
       },
       inject: [ConfigService],
