@@ -7,6 +7,17 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
+  // Настройка для работы за прокси (Cloudflare Tunnel)
+  app.setGlobalPrefix('');
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  // Trust proxy для правильной обработки заголовков от Cloudflare Tunnel
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true);
+
   // Graceful shutdown
   const gracefulShutdown = async (signal: string) => {
     Logger.log(`📴 Получен сигнал ${signal}, завершение работы...`);
