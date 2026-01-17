@@ -72,7 +72,10 @@ services:
     command: >
       tunnel --no-autoupdate run
       --token ${CLOUDFLARE_TUNNEL_TOKEN}
+      --config /etc/cloudflared/config.yml
     env_file: .env
+    volumes:
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
     depends_on:
       app:
         condition: service_healthy
