@@ -35,7 +35,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb
 
   app:
     build:
@@ -75,6 +75,11 @@ services:
       - app
     networks:
       - rocket-notify-network
+    healthcheck:
+      test: ['CMD', 'cloudflared', 'tunnel', 'info']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   rocket-notify-network:
