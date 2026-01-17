@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { QueueService } from './queue.service';
@@ -24,8 +24,8 @@ import { TelegramModule } from '../telegram/telegram.module';
     BullModule.registerQueue({
       name: 'polling',
     }),
-    UserModule,
-    RocketChatModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => RocketChatModule),
     TelegramModule,
   ],
   providers: [QueueService, PollingProcessor],

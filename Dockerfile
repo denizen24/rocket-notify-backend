@@ -7,8 +7,6 @@ WORKDIR /app
 
 # Копируем файлы зависимостей
 COPY package*.json ./
-COPY prisma.config.ts ./
-COPY prisma ./prisma
 
 # Устанавливаем зависимости
 RUN npm ci
