@@ -16,16 +16,24 @@ import { UserController } from '../user/user.controller';
         if (!token) {
           throw new Error('Missing required env: TELEGRAM_BOT_TOKEN');
         }
-        
+
         const webhookUrl = config.get<string>('TELEGRAM_WEBHOOK_URL');
         const webhookSecret = config.get<string>('TELEGRAM_WEBHOOK_SECRET');
-        
+
         // Если указан webhook URL, используем webhook, иначе polling
-        const options: any = {
+        const options: {
+          token: string;
+          middlewares: ReturnType<typeof session>[];
+          webhook?: {
+            domain: string;
+            path: string;
+            secretToken: string;
+          };
+        } = {
           token,
           middlewares: [session()],
         };
-        
+
         if (webhookUrl && webhookSecret) {
           options.webhook = {
             domain: webhookUrl,
@@ -33,7 +41,7 @@ import { UserController } from '../user/user.controller';
             secretToken: webhookSecret,
           };
         }
-        
+
         return options;
       },
       inject: [ConfigService],
@@ -41,7 +49,7 @@ import { UserController } from '../user/user.controller';
     UserModule, // Импортируем UserModule для UserService
   ],
   controllers: [UserController], // Регистрируем UserController в BotModule для работы с Telegraf
-  providers: [BotService], 
+  providers: [BotService],
   exports: [BotService],
 })
 export class BotModule {}

@@ -1,4 +1,9 @@
-import { prop, index, modelOptions, getModelForClass } from '@typegoose/typegoose';
+import {
+  prop,
+  index,
+  modelOptions,
+  getModelForClass,
+} from '@typegoose/typegoose';
 import { TimeStamps } from '@typegoose/typegoose/lib/defaultClasses';
 
 @index({ telegramId: 1 }, { unique: true })

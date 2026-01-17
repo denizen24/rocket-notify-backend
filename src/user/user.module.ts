@@ -6,12 +6,14 @@ import { RocketChatModule } from '../rocket-chat/rocket-chat.module';
 import { CommonModule } from '../common/common.module';
 import { getModelForClass } from '@typegoose/typegoose';
 
+const UserModel = getModelForClass(User);
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       {
         name: User.name,
-        schema: getModelForClass(User).schema,
+        schema: UserModel.schema,
       },
     ]),
     forwardRef(() => RocketChatModule),

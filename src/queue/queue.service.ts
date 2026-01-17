@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import type { Queue } from 'bull';
 import { User } from '../database/user.schema';
+import { Document, Types } from 'mongoose';
+
+interface UserWithId extends User, Document {
+  _id: Types.ObjectId;
+}
 
 @Injectable()
 export class QueueService {
@@ -9,7 +14,7 @@ export class QueueService {
 
   constructor(@InjectQueue('polling') private pollingQueue: Queue) {}
 
-  async addPollingJob(user: User) {
+  async addPollingJob(user: UserWithId) {
     await this.pollingQueue.add(
       'check-unread',
       {
@@ -35,7 +40,7 @@ export class QueueService {
     );
   }
 
-  async schedulePollingForAllUsers(users: User[]) {
+  async schedulePollingForAllUsers(users: UserWithId[]) {
     this.logger.log(`[📋 Добавление ${users.length} задач в очередь]`);
     for (const user of users) {
       await this.addPollingJob(user);

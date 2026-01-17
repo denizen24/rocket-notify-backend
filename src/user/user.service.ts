@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserModel } from '../database/user.schema';
+import { Model, Document } from 'mongoose';
+import { User } from '../database/user.schema';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
 import { CryptoService } from '../common/crypto.service';
 
@@ -37,7 +37,7 @@ export class UserService {
   ): Promise<void> {
     try {
       const loginRes = await this.rocketChatService.login(server, user, pass);
-      
+
       // Шифруем токен перед сохранением
       const encryptedToken = this.cryptoService.encrypt(loginRes.authToken);
 
@@ -67,7 +67,7 @@ export class UserService {
     }
   }
 
-  async getAllEnabledUsers(): Promise<User[]> {
+  async getAllEnabledUsers(): Promise<(User & Document)[]> {
     return this.userModel.find({ enabled: true }).exec();
   }
 
@@ -76,9 +76,11 @@ export class UserService {
   }
 
   async toggleEnabled(telegramId: string, enabled: boolean): Promise<User> {
-    return this.userModel
+    const user = await this.userModel
       .findOneAndUpdate({ telegramId }, { enabled }, { new: true })
+      .orFail()
       .exec();
+    return user;
   }
 
   /**

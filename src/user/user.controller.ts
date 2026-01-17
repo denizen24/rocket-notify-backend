@@ -10,7 +10,7 @@ export class UserController {
 
   constructor(private readonly userService: UserService) {}
 
-  @Hears(/.*/)  // Ловит все текстовые сообщения для отладки (низкий приоритет)
+  @Hears(/.*/) // Ловит все текстовые сообщения для отладки (низкий приоритет)
   async catchAll(@Ctx() ctx: Context) {
     this.logger.log(`📱 UPDATE: ${JSON.stringify(ctx.update, null, 2)}`);
     if (ctx.message && 'text' in ctx.message) {

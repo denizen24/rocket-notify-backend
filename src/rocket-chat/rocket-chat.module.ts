@@ -6,11 +6,7 @@ import { UserModule } from '../user/user.module';
 import { QueueModule } from '../queue/queue.module';
 
 @Module({
-  imports: [
-    TelegramModule,
-    forwardRef(() => UserModule),
-    QueueModule,
-  ],
+  imports: [TelegramModule, forwardRef(() => UserModule), QueueModule],
   providers: [RocketChatService, RocketChatPollingService],
   exports: [RocketChatService],
 })

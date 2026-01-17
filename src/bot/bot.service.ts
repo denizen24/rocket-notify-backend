@@ -14,7 +14,7 @@ export class BotService implements OnModuleInit {
       { command: 'status', description: '📊 Статус' },
       { command: 'help', description: '❓ Помощь' },
     ]);
-    
+
     console.log('✅ Команды бота установлены!');
   }
 }

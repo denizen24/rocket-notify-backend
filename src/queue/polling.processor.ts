@@ -4,7 +4,6 @@ import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UserService } from '../user/user.service';
-import { User } from '../database/user.schema';
 
 interface PollingJobData {
   user: {
@@ -57,9 +56,7 @@ export class PollingProcessor {
         user.rcInstanceId ?? undefined,
       );
 
-      this.logger.log(
-        `[📊 User ${user.telegramId}: total=${unread.total}]`,
-      );
+      this.logger.log(`[📊 User ${user.telegramId}: total=${unread.total}]`);
 
       if (unread.total > user.lastUnread) {
         await this.telegramService.sendUnreadAlert(

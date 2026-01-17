@@ -20,8 +20,12 @@ async function bootstrap() {
     }
   };
 
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => {
+    void gracefulShutdown('SIGTERM');
+  });
+  process.on('SIGINT', () => {
+    void gracefulShutdown('SIGINT');
+  });
 
   const port = process.env.PORT ?? 3000;
   try {

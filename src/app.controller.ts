@@ -5,7 +5,12 @@ import { User } from './database/user.schema';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import type { Queue } from 'bull';
+import { Document, Types } from 'mongoose';
+
+interface UserWithId extends User, Document {
+  _id: Types.ObjectId;
+}
 
 interface UserResponse {
   id: string;
@@ -33,7 +38,8 @@ export class AppController {
 
   @Get('healthz')
   async healthCheck() {
-    const mongoStatus = this.mongoConnection.readyState === 1 ? 'ok' : 'error';
+    const mongoStatus =
+      this.mongoConnection.readyState === 1 ? ('ok' as const) : ('error' as const);
     const redisStatus = await this.checkRedis();
 
     return {
@@ -60,14 +66,14 @@ export class AppController {
   @Get('users')
   async getUsers(): Promise<UserResponse[]> {
     const users = await this.userService.getAllEnabledUsers();
-    return users.map((u: User) => ({
+    return users.map((u: UserWithId) => ({
       id: u._id.toString(),
       telegramId: u.telegramId,
       rcServer: u.rcServer ?? null,
       rcUser: u.rcUser ?? null,
       enabled: u.enabled,
       lastUnread: u.lastUnread,
-      createdAt: u.createdAt,
+      createdAt: u.createdAt ?? new Date(),
     }));
   }
 
@@ -76,7 +82,10 @@ export class AppController {
     @Param('telegramId') telegramId: string,
     @Body('enabled') enabled: boolean,
   ): Promise<UserResponse> {
-    const user = await this.userService.toggleEnabled(telegramId, enabled);
+    const user = (await this.userService.toggleEnabled(
+      telegramId,
+      enabled,
+    )) as UserWithId;
     return {
       id: user._id.toString(),
       telegramId: user.telegramId,
@@ -84,7 +93,7 @@ export class AppController {
       rcUser: user.rcUser ?? null,
       enabled: user.enabled,
       lastUnread: user.lastUnread,
-      createdAt: user.createdAt,
+      createdAt: user.createdAt ?? new Date(),
     };
   }
 }
