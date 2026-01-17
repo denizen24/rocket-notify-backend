@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { UserService } from './user/user.service';
-import { User } from './user/user.types';
+import { User } from './database/user.schema';
 
 interface UserResponse {
   id: string;
@@ -29,10 +29,10 @@ export class AppController {
   async getUsers(): Promise<UserResponse[]> {
     const users = await this.userService.getAllEnabledUsers();
     return users.map((u: User) => ({
-      id: u.id,
+      id: u._id.toString(),
       telegramId: u.telegramId,
-      rcServer: u.rcServer,
-      rcUser: u.rcUser,
+      rcServer: u.rcServer ?? null,
+      rcUser: u.rcUser ?? null,
       enabled: u.enabled,
       lastUnread: u.lastUnread,
       createdAt: u.createdAt,
@@ -43,7 +43,16 @@ export class AppController {
   async toggleEnabled(
     @Param('telegramId') telegramId: string,
     @Body('enabled') enabled: boolean,
-  ): Promise<User> {
-    return this.userService.toggleEnabled(telegramId, enabled);
+  ): Promise<UserResponse> {
+    const user = await this.userService.toggleEnabled(telegramId, enabled);
+    return {
+      id: user._id.toString(),
+      telegramId: user.telegramId,
+      rcServer: user.rcServer ?? null,
+      rcUser: user.rcUser ?? null,
+      enabled: user.enabled,
+      lastUnread: user.lastUnread,
+      createdAt: user.createdAt,
+    };
   }
 }

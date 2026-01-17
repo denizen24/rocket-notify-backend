@@ -77,9 +77,20 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
         }
 
         try {
+          // Получаем расшифрованный токен
+          const decryptedToken = await this.userService.getDecryptedToken(
+            user.telegramId,
+          );
+          if (!decryptedToken) {
+            this.logger.warn(
+              `[⚠️ Не удалось расшифровать токен для ${user.telegramId}]`,
+            );
+            continue;
+          }
+
           const unread = await this.rocketChatService.getUnreadCount(
             user.rcServer,
-            user.rcToken,
+            decryptedToken,
             user.rcUserId,
             user.rcInstanceId ?? undefined,
           );
@@ -93,7 +104,10 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
               user.telegramId,
               unread.total,
             );
-            await this.userService.updateLastUnread(user.id, unread.total);
+            await this.userService.updateLastUnread(
+              user._id.toString(),
+              unread.total,
+            );
             this.logger.log(
               `[📱 Sent alert to ${user.telegramId}: unread=${unread.total}]`,
             );

@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { session } from 'telegraf';
 import { BotService } from './bot.service';
 import { UserModule } from '../user/user.module';
+import { UserController } from '../user/user.controller';
 
 @Module({
   imports: [
@@ -22,8 +23,9 @@ import { UserModule } from '../user/user.module';
       },
       inject: [ConfigService],
     }),
-    UserModule, // Импортируем UserModule, чтобы UserController мог использовать декораторы nestjs-telegraf
+    UserModule, // Импортируем UserModule для UserService
   ],
+  controllers: [UserController], // Регистрируем UserController в BotModule для работы с Telegraf
   providers: [BotService], 
   exports: [BotService],
 })
