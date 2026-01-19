@@ -37,12 +37,12 @@ import { UserController } from '../user/user.controller';
         if (webhookUrl && webhookSecret) {
           options.webhook = {
             domain: webhookUrl,
-            path: '/webhook/rocketnotify',
+            path: '/rocketnotify',
             secretToken: webhookSecret,
           };
-          console.log(`🌐 Webhook настроен на Tuna URL: ${webhookUrl}/webhook/rocketnotify`);
+          console.log(`🌐 Tunel настроен на Tuna URL: ${webhookUrl}/rocketnotify`);
         } else {
-          console.log('📡 Используется polling режим (webhook не настроен)');
+          console.log('📡 Используется polling режим (tunel не настроен)');
         }
 
         return options;
