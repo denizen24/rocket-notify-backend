@@ -24,14 +24,23 @@ import { UserController } from '../user/user.controller';
         const options: {
           token: string;
           middlewares: ReturnType<typeof session>[];
+          launchOptions?: false | {
+            webhook?: {
+              domain: string;
+              path: string;
+              secretToken: string;
+            };
+          };
         } = {
           token,
           middlewares: [session()],
         };
 
-        // Webhook будет установлен явно в BotService.onModuleInit()
-        // Здесь только логируем настройки
+        // Если webhook настроен, отключаем автоматический запуск polling
+        // Webhook будет установлен в BotService.onModuleInit()
         if (webhookUrl && webhookSecret) {
+          // Отключаем автоматический запуск, чтобы установить webhook вручную
+          options.launchOptions = false;
           console.log(
             `🌐 Webhook будет настроен на: ${webhookUrl}/webhook/rocketnotify`,
           );

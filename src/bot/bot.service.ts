@@ -28,6 +28,9 @@ export class BotService implements OnModuleInit {
 
     if (webhookUrl && webhookSecret) {
       try {
+        // Сначала удаляем существующий webhook (если был), чтобы избежать конфликтов
+        await this.bot.telegram.deleteWebhook({ drop_pending_updates: false });
+
         const fullWebhookUrl = `${webhookUrl}/webhook/rocketnotify`;
         await this.bot.telegram.setWebhook(fullWebhookUrl, {
           secret_token: webhookSecret,
@@ -40,16 +43,20 @@ export class BotService implements OnModuleInit {
           pending_update_count: webhookInfo.pending_update_count,
         });
         console.log(`✅ Webhook настроен на: ${fullWebhookUrl}`);
+        // Бот не запускается в webhook режиме, так как обновления приходят через HTTP
       } catch (error) {
         console.error('❌ Ошибка установки webhook:', error);
       }
     } else {
-      // Если webhook не настроен, удаляем его (если был установлен ранее)
+      // Если webhook не настроен, удаляем его (если был установлен ранее) и запускаем polling
       try {
         await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
-        console.log('📡 Webhook удален, используется polling режим');
+        console.log('📡 Webhook удален, запускается polling режим');
+        // Запускаем бота в polling режиме
+        await this.bot.launch();
+        console.log('✅ Бот запущен в polling режиме');
       } catch (error) {
-        console.log('📡 Polling режим (webhook не настроен)');
+        console.error('❌ Ошибка запуска бота:', error);
       }
     }
   }
