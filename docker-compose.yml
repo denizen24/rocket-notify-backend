@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:7
@@ -71,7 +69,18 @@ services:
     restart: unless-stopped
     environment:
       - TUNA_TOKEN=${TUNA_TOKEN}
-    command: http app:3000
+    volumes:
+      - tuna-config:/root/.config/tuna
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+        if [ -z \"$$TUNA_TOKEN\" ]; then
+          echo 'ERROR: TUNA_TOKEN is not set'
+          exit 1
+        fi
+        tuna config save-token $$TUNA_TOKEN &&
+        tuna http app:3000
+      "
     depends_on:
       app:
         condition: service_healthy
@@ -87,3 +96,6 @@ services:
 networks:
   rocket-notify-network:
     driver: bridge
+
+volumes:
+  tuna-config:
