@@ -22,9 +22,11 @@ export class UserController {
   async start(@Ctx() ctx: Context) {
     const telegramId = ctx.from?.id.toString();
     if (!telegramId) {
+      this.logger.warn('⚠️ Команда /start: telegramId не найден');
       return;
     }
 
+    this.logger.log(`📱 Команда /start от пользователя: ${telegramId}`);
     await this.userService.findOrCreateTelegramUser(telegramId);
 
     const welcomeText = `

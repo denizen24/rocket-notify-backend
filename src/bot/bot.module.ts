@@ -36,13 +36,14 @@ import { UserController } from '../user/user.controller';
           middlewares: [session()],
         };
 
-        // Если webhook настроен, отключаем автоматический запуск polling
-        // Webhook будет установлен в BotService.onModuleInit()
+        // Если webhook настроен, отключаем автоматический запуск
+        // Webhook будет установлен вручную в BotService.onModuleInit()
+        // Middleware будет настроен в main.ts
         if (webhookUrl && webhookSecret) {
           // Отключаем автоматический запуск, чтобы установить webhook вручную
           options.launchOptions = false;
           console.log(
-            `🌐 Webhook будет настроен на: ${webhookUrl}`,
+            `🌐 Webhook будет настроен на: ${webhookUrl}/webhook/rocketnotify`,
           );
         } else {
           console.log('📡 Используется polling режим (webhook не настроен)');

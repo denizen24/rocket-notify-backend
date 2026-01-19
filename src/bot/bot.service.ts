@@ -28,10 +28,9 @@ export class BotService implements OnModuleInit {
 
     if (webhookUrl && webhookSecret) {
       try {
-        // Сначала удаляем существующий webhook (если был), чтобы избежать конфликтов
-        await this.bot.telegram.deleteWebhook({ drop_pending_updates: false });
-
-        const fullWebhookUrl = `${webhookUrl}`;
+        // Устанавливаем webhook с правильным путем
+        // Middleware уже настроен в main.ts
+        const fullWebhookUrl = `${webhookUrl}/webhook/rocketnotify`;
         await this.bot.telegram.setWebhook(fullWebhookUrl, {
           secret_token: webhookSecret,
         });
@@ -43,6 +42,7 @@ export class BotService implements OnModuleInit {
           pending_update_count: webhookInfo.pending_update_count,
         });
         console.log(`✅ Webhook настроен на: ${fullWebhookUrl}`);
+        console.log('📡 Endpoint для обработки: POST /webhook/rocketnotify');
         // Бот не запускается в webhook режиме, так как обновления приходят через HTTP
       } catch (error) {
         console.error('❌ Ошибка установки webhook:', error);
