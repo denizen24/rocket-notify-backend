@@ -4,6 +4,7 @@ import { Model, Document } from 'mongoose';
 import { User } from '../database/user.schema';
 import { RocketChatService } from '../rocket-chat/rocket-chat.service';
 import { CryptoService } from '../common/crypto.service';
+import { LoginState } from './login-state.interface';
 
 @Injectable()
 export class UserService {
@@ -100,5 +101,65 @@ export class UserService {
       );
       return null;
     }
+  }
+
+  /**
+   * Устанавливает состояние мастера настройки
+   */
+  async setLoginState(telegramId: string, state: LoginState): Promise<void> {
+    await this.userModel
+      .findOneAndUpdate({ telegramId }, { loginState: state }, { upsert: false })
+      .exec();
+    this.logger.log(
+      `[📝 Установлено состояние мастера для ${telegramId}: ${state.step}]`,
+    );
+  }
+
+  /**
+   * Получает состояние мастера настройки
+   */
+  async getLoginState(telegramId: string): Promise<LoginState | null> {
+    const user = await this.userModel.findOne({ telegramId }).exec();
+    return user?.loginState || null;
+  }
+
+  /**
+   * Обновляет состояние мастера настройки
+   */
+  async updateLoginState(
+    telegramId: string,
+    updates: Partial<LoginState>,
+  ): Promise<void> {
+    const user = await this.userModel.findOne({ telegramId }).exec();
+    if (!user) {
+      return;
+    }
+
+    const currentState = user.loginState || {
+      step: 'server',
+      createdAt: new Date(),
+    };
+
+    const updatedState: LoginState = {
+      ...currentState,
+      ...updates,
+    };
+
+    await this.userModel
+      .findOneAndUpdate({ telegramId }, { loginState: updatedState })
+      .exec();
+    this.logger.log(
+      `[📝 Обновлено состояние мастера для ${telegramId}: ${updatedState.step}]`,
+    );
+  }
+
+  /**
+   * Очищает состояние мастера настройки
+   */
+  async clearLoginState(telegramId: string): Promise<void> {
+    await this.userModel
+      .findOneAndUpdate({ telegramId }, { $unset: { loginState: 1 } })
+      .exec();
+    this.logger.log(`[📝 Очищено состояние мастера для ${telegramId}]`);
   }
 }

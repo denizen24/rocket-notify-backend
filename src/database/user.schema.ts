@@ -35,6 +35,14 @@ export class User extends TimeStamps {
 
   @prop({ required: true, default: 0 })
   lastUnread!: number;
+
+  @prop({ required: false, type: Object })
+  loginState?: {
+    step: 'server' | 'user' | 'pass';
+    server?: string;
+    user?: string;
+    createdAt: Date;
+  };
 }
 
 export const UserModel = getModelForClass(User);

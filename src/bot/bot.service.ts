@@ -10,9 +10,8 @@ export class BotService implements OnModuleInit {
     // ❌ Устанавливаем команды при старте
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: '🚀 Запустить уведомления' },
-      { command: 'login', description: '🔑 Подключить Rocket.Chat' },
-      { command: 'status', description: '📊 Статус' },
-      { command: 'help', description: '❓ Помощь' },
+      { command: 'login', description: '🔑 Подключить Rocket.Chat (резервный)' },
+      { command: 'stop', description: '⏸️ Отключить уведомления' },
     ]);
 
     console.log('✅ Команды бота установлены!');
