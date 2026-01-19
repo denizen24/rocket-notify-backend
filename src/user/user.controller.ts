@@ -107,6 +107,45 @@ export class UserController {
     }
   }
 
+  @Command('setup')
+  async setupCommand(@Ctx() ctx: Context) {
+    const telegramId = ctx.from?.id.toString();
+    if (!telegramId) {
+      return;
+    }
+
+    // Очищаем предыдущее состояние, если было
+    await this.userService.clearLoginState(telegramId);
+
+    // Устанавливаем начальное состояние мастера
+    const initialState: LoginState = {
+      step: 'server',
+      createdAt: new Date(),
+    };
+    await this.userService.setLoginState(telegramId, initialState);
+
+    const serverPrompt = `
+📝 *Шаг 1 из 3: Сервер Rocket.Chat*
+
+Введите URL вашего сервера Rocket.Chat.
+
+*Пример:*
+\`https://rocketchat.example.com\`
+
+*Или:*
+\`https://chat.company.com\`
+`;
+
+    await ctx.reply(serverPrompt, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '❌ Отменить', callback_data: 'cancel_setup' }],
+        ],
+      },
+    });
+  }
+
   @Action('setup')
   async setup(@Ctx() ctx: Context) {
     const telegramId = ctx.from?.id.toString();
