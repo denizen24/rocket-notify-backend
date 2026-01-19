@@ -7,14 +7,14 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
-  // Настройка для работы за прокси (Cloudflare Tunnel)
+  // Настройка для работы за прокси (Tuna Tunnel)
   app.setGlobalPrefix('');
   app.enableCors({
     origin: true,
     credentials: true,
   });
 
-  // Trust proxy для правильной обработки заголовков от Cloudflare Tunnel
+  // Trust proxy для правильной обработки заголовков от Tuna Tunnel
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', true);
 

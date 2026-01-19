@@ -40,6 +40,9 @@ import { UserController } from '../user/user.controller';
             path: '/webhook/rocketnotify',
             secretToken: webhookSecret,
           };
+          console.log(`🌐 Webhook настроен на Tuna URL: ${webhookUrl}/webhook/rocketnotify`);
+        } else {
+          console.log('📡 Используется polling режим (webhook не настроен)');
         }
 
         return options;
