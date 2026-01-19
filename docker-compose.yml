@@ -69,6 +69,7 @@ services:
     restart: unless-stopped
     environment:
       - TUNA_TOKEN=${TUNA_TOKEN}
+      - TUNA_SUBDOMAIN=${TUNA_SUBDOMAIN}
     volumes:
       - tuna-config:/root/.config/tuna
     entrypoint: ["/bin/sh", "-c"]
@@ -79,7 +80,7 @@ services:
           exit 1
         fi
         tuna config save-token $$TUNA_TOKEN &&
-        tuna http app:3000
+        tuna http app:3000 --subdomain=$$TUNA_SUBDOMAIN
       "
     depends_on:
       app:
