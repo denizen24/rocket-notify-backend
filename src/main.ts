@@ -9,10 +9,7 @@ async function bootstrap() {
 
   // Настройка для работы за прокси (Tuna Tunnel)
   app.setGlobalPrefix('');
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  app.enableCors();
 
   // Trust proxy для правильной обработки заголовков от Tuna Tunnel
   const expressApp = app.getHttpAdapter().getInstance();
