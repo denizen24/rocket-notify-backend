@@ -20,35 +20,30 @@ import { UserController } from '../user/user.controller';
         const webhookUrl = config.get<string>('TELEGRAM_WEBHOOK_URL');
         const webhookSecret = config.get<string>('TELEGRAM_WEBHOOK_SECRET');
 
-        // Если указан webhook URL, используем webhook, иначе polling
+        // Базовая конфигурация бота
         const options: {
           token: string;
           middlewares: ReturnType<typeof session>[];
-          webhook?: {
-            domain: string;
-            path: string;
-            secretToken: string;
-          };
         } = {
           token,
           middlewares: [session()],
         };
 
+        // Webhook будет установлен явно в BotService.onModuleInit()
+        // Здесь только логируем настройки
         if (webhookUrl && webhookSecret) {
-          options.webhook = {
-            domain: webhookUrl,
-            path: '/rocketnotify',
-            secretToken: webhookSecret,
-          };
-          console.log(`🌐 Tunel настроен на Tuna URL: ${webhookUrl}/rocketnotify`);
+          console.log(
+            `🌐 Webhook будет настроен на: ${webhookUrl}/webhook/rocketnotify`,
+          );
         } else {
-          console.log('📡 Используется polling режим (tunel не настроен)');
+          console.log('📡 Используется polling режим (webhook не настроен)');
         }
 
         return options;
       },
       inject: [ConfigService],
     }),
+    ConfigModule, // Добавляем ConfigModule для BotService
     UserModule, // Импортируем UserModule для UserService
   ],
   controllers: [UserController], // Регистрируем UserController в BotModule для работы с Telegraf
