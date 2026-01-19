@@ -31,7 +31,7 @@ export class BotService implements OnModuleInit {
         // Сначала удаляем существующий webhook (если был), чтобы избежать конфликтов
         await this.bot.telegram.deleteWebhook({ drop_pending_updates: false });
 
-        const fullWebhookUrl = `${webhookUrl}/webhook/rocketnotify`;
+        const fullWebhookUrl = `${webhookUrl}`;
         await this.bot.telegram.setWebhook(fullWebhookUrl, {
           secret_token: webhookSecret,
         });
