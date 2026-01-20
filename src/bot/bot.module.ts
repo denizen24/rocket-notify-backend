@@ -59,9 +59,4 @@ import { UserModule } from '../user/user.module';
   providers: [BotService],
   exports: [BotService],
 })
-export class BotModule {
-  constructor() {
-    console.log('✅ [BotModule] BotModule инициализирован');
-    console.log('✅ [BotModule] BotService зарегистрирован в BotModule');
-  }
-}
+export class BotModule {}

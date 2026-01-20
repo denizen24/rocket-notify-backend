@@ -6,6 +6,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RocketChatService } from './rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { UserService } from '../user/user.service';
@@ -16,7 +17,7 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RocketChatPollingService.name);
   private intervalId: NodeJS.Timeout | null = null;
   private isChecking = false;
-  private readonly defaultIntervalMs = 5 * 60 * 1000; // 5 минут по умолчанию
+  private readonly intervalMs: number;
 
   constructor(
     private readonly rocketChatService: RocketChatService,
@@ -24,7 +25,13 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly queueService: QueueService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Получаем интервал из переменной окружения (в минутах), по умолчанию 5 минут
+    const intervalMinStr = this.configService.get<string>('POLLING_INTERVAL_MIN', '5');
+    const intervalMin = parseInt(intervalMinStr, 10) || 5;
+    this.intervalMs = intervalMin * 60 * 1000;
+  }
 
   onModuleInit(): void {
     this.start();
@@ -47,11 +54,11 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       this.checkAllUsers().catch((error) => {
         this.logger.error('Ошибка цикла polling.', error as Error);
       });
-    }, this.defaultIntervalMs);
+    }, this.intervalMs);
 
     this.logger.log('[🚀 Polling started]');
     this.logger.log(
-      `Интервал: ${Math.round(this.defaultIntervalMs / 60000)} мин.`,
+      `Интервал: ${Math.round(this.intervalMs / 60000)} мин.`,
     );
   }
 
@@ -72,8 +79,8 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       const users = await this.userService.getAllEnabledUsers();
       this.logger.log(`[📋 Проверка ${users.length} пользователей]`);
 
-      // Если пользователей больше 50, используем очередь
-      if (users.length > 50) {
+      // Если пользователей больше 20, используем очередь
+      if (users.length > 20) {
         this.logger.log('[📦 Использование очереди для polling]');
         await this.queueService.schedulePollingForAllUsers(users);
         return;
