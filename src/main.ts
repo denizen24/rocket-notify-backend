@@ -30,13 +30,16 @@ async function bootstrap() {
       const bot = app.get(getBotToken('RocketNotifyBot'));
       const webhookPath = '/webhook/rocketnotify';
       
-      // Используем app.use() как указано в документации nestjs-telegraf
+      // Используем expressApp.post() для явной регистрации POST endpoint
       // webhookCallback обрабатывает обновления и передает их в систему декораторов
       const webhookMiddleware = bot.webhookCallback(webhookPath, {
         secretToken: webhookSecret,
       });
-      app.use(webhookMiddleware);
-      Logger.log(`✅ Webhook middleware зарегистрирован: ${webhookPath}`);
+      
+      // Регистрируем POST endpoint через Express напрямую
+      expressApp.post(webhookPath, webhookMiddleware);
+      
+      Logger.log(`✅ Webhook endpoint зарегистрирован: POST ${webhookPath}`);
       Logger.log(`🔐 Secret token: ${webhookSecret ? 'установлен' : 'не установлен'}`);
       Logger.log(`📡 Webhook URL должен быть: ${webhookUrl}${webhookPath}`);
     } catch (error) {
