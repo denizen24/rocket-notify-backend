@@ -43,7 +43,7 @@ import { UserController } from '../user/user.controller';
           // Отключаем автоматический запуск, чтобы установить webhook вручную
           options.launchOptions = false;
           console.log(
-            `🌐 Webhook будет настроен на: ${webhookUrl}/webhook/rocketnotify`,
+            `🌐 Webhook будет настроен на: ${webhookUrl}`,
           );
         } else {
           console.log('📡 Используется polling режим (webhook не настроен)');

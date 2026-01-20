@@ -30,7 +30,7 @@ export class BotService implements OnModuleInit {
       try {
         // Устанавливаем webhook с правильным путем
         // Middleware уже настроен в main.ts
-        const fullWebhookUrl = `${webhookUrl}/webhook/rocketnotify`;
+        const fullWebhookUrl = `${webhookUrl}`;
         await this.bot.telegram.setWebhook(fullWebhookUrl, {
           secret_token: webhookSecret,
         });
