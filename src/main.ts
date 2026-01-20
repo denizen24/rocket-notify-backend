@@ -30,14 +30,15 @@ async function bootstrap() {
       const bot = app.get(getBotToken('RocketNotifyBot'));
       const webhookPath = '/webhook/rocketnotify';
       
-      // Регистрируем endpoint для обработки POST запросов от Telegram
-      // webhookCallback обрабатывает обновления и передает их в бота
-      expressApp.post(
-        webhookPath,
-        bot.webhookCallback(webhookPath, { secretToken: webhookSecret }),
-      );
-      Logger.log(`✅ Webhook endpoint зарегистрирован: POST ${webhookPath}`);
+      // Используем app.use() как указано в документации nestjs-telegraf
+      // webhookCallback обрабатывает обновления и передает их в систему декораторов
+      const webhookMiddleware = bot.webhookCallback(webhookPath, {
+        secretToken: webhookSecret,
+      });
+      app.use(webhookMiddleware);
+      Logger.log(`✅ Webhook middleware зарегистрирован: ${webhookPath}`);
       Logger.log(`🔐 Secret token: ${webhookSecret ? 'установлен' : 'не установлен'}`);
+      Logger.log(`📡 Webhook URL должен быть: ${webhookUrl}${webhookPath}`);
     } catch (error) {
       Logger.error('❌ Ошибка настройки webhook middleware:', error);
       Logger.error('Детали ошибки:', (error as Error).stack);
