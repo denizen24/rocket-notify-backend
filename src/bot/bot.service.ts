@@ -2,14 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { ConfigService } from '@nestjs/config';
-import {
-  Ctx,
-  Hears,
-  Update,
-} from 'nestjs-telegraf';
-import { Context } from 'telegraf';
 
-@Update()
 @Injectable()
 export class BotService implements OnModuleInit {
   constructor(
@@ -35,6 +28,9 @@ export class BotService implements OnModuleInit {
 
     if (webhookUrl && webhookSecret) {
       try {
+        // Сначала удаляем существующий webhook (если был), чтобы избежать конфликтов
+        await this.bot.telegram.deleteWebhook({ drop_pending_updates: false });
+
         // Устанавливаем webhook с правильным путем
         // Middleware уже настроен в main.ts на /webhook/rocketnotify
         const fullWebhookUrl = `${webhookUrl}/webhook/rocketnotify`;
@@ -64,22 +60,6 @@ export class BotService implements OnModuleInit {
         console.log('✅ Бот запущен в polling режиме');
       } catch (error) {
         console.error('❌ Ошибка запуска бота:', error);
-      }
-    }
-  }
-
-  @Hears(/.*/) // Ловит все текстовые сообщения для отладки (низкий приоритет)
-  async catchAll(@Ctx() ctx: Context) {
-    console.log(`🔔 [CATCHALL] Получено обновление`);
-    console.log(`🔔 [CATCHALL] Update: ${JSON.stringify(ctx.update, null, 2)}`);
-    console.log(`🔔 [CATCHALL] Update type: ${ctx.updateType}`);
-    console.log(`🔔 [CATCHALL] Message: ${ctx.message ? JSON.stringify(ctx.message, null, 2) : 'нет'}`);
-    
-    if (ctx.message && 'text' in ctx.message) {
-      console.log(`📱 Получено сообщение: ${ctx.message.text}`);
-      // Отвечаем только если это не команда (команды обрабатываются отдельно)
-      if (!ctx.message.text.startsWith('/')) {
-        await ctx.reply(`🤖 Бот работает! Получил: ${ctx.message.text}`);
       }
     }
   }
