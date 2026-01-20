@@ -16,10 +16,16 @@ import { LoginState } from './login-state.interface';
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) {
+    // Логируем при создании контроллера
+    this.logger.log('✅ UserController инициализирован');
+  }
 
   @Command('start')
   async start(@Ctx() ctx: Context) {
+    this.logger.log(`🔔 [COMMAND] /start вызван`);
+    this.logger.log(`🔔 [COMMAND] Update: ${JSON.stringify(ctx.update, null, 2)}`);
+    
     const telegramId = ctx.from?.id.toString();
     if (!telegramId) {
       this.logger.warn('⚠️ Команда /start: telegramId не найден');
@@ -383,7 +389,11 @@ export class UserController {
 
   @Hears(/.*/) // Ловит все текстовые сообщения для отладки (низкий приоритет)
   async catchAll(@Ctx() ctx: Context) {
-    this.logger.log(`📱 UPDATE: ${JSON.stringify(ctx.update, null, 2)}`);
+    this.logger.log(`🔔 [CATCHALL] Получено обновление`);
+    this.logger.log(`🔔 [CATCHALL] Update: ${JSON.stringify(ctx.update, null, 2)}`);
+    this.logger.log(`🔔 [CATCHALL] Update type: ${ctx.updateType}`);
+    this.logger.log(`🔔 [CATCHALL] Message: ${ctx.message ? JSON.stringify(ctx.message, null, 2) : 'нет'}`);
+    
     if (ctx.message && 'text' in ctx.message) {
       this.logger.log(`📱 Получено сообщение: ${ctx.message.text}`);
       // Отвечаем только если это не команда (команды обрабатываются отдельно)

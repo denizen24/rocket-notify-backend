@@ -12,6 +12,7 @@ import { UserController } from '../user/user.controller';
       imports: [ConfigModule],
       botName: 'RocketNotifyBot',
       useFactory: (config: ConfigService) => {
+        console.log('🔧 [BotModule] Инициализация TelegrafModule...');
         const token = config.get<string>('TELEGRAM_BOT_TOKEN');
         if (!token) {
           throw new Error('Missing required env: TELEGRAM_BOT_TOKEN');
@@ -60,4 +61,9 @@ import { UserController } from '../user/user.controller';
   providers: [BotService],
   exports: [BotService],
 })
-export class BotModule {}
+export class BotModule {
+  constructor() {
+    console.log('✅ [BotModule] BotModule инициализирован');
+    console.log('✅ [BotModule] UserController зарегистрирован в BotModule');
+  }
+}
