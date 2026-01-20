@@ -3,7 +3,6 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { session } from 'telegraf';
 import { BotService } from './bot.service';
-import { BotController } from './bot.controller';
 import { UserModule } from '../user/user.module';
 
 @Module({
@@ -57,13 +56,12 @@ import { UserModule } from '../user/user.module';
     ConfigModule, // Добавляем ConfigModule для BotService
     UserModule, // Импортируем UserModule для UserService
   ],
-  controllers: [BotController], // Регистрируем BotController для обработки Telegram обновлений
   providers: [BotService],
   exports: [BotService],
 })
 export class BotModule {
   constructor() {
     console.log('✅ [BotModule] BotModule инициализирован');
-    console.log('✅ [BotModule] BotController зарегистрирован в BotModule');
+    console.log('✅ [BotModule] BotService зарегистрирован в BotModule');
   }
 }
