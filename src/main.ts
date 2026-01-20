@@ -42,60 +42,10 @@ async function bootstrap() {
         secretToken: webhookSecret,
       });
       
-      // Обертываем middleware для логирования
-      // webhookCallback сам парсит body, поэтому мы логируем raw body до парсинга
-      const loggingMiddleware = async (req: any, res: any, next: any) => {
-        Logger.log(`📥 [WEBHOOK] Получен запрос на ${webhookPath}`);
-        Logger.log(`📥 [WEBHOOK] Method: ${req.method}`);
-        Logger.log(`📥 [WEBHOOK] Secret token в заголовке: ${req.headers['x-telegram-bot-api-secret-token']}`);
-        
-        // Собираем raw body для логирования (webhookCallback сам парсит его)
-        const chunks: Buffer[] = [];
-        const originalOn = req.on.bind(req);
-        let bodyCollected = false;
-        
-        req.on = function(event: string, listener: any) {
-          if (event === 'data' && !bodyCollected) {
-            bodyCollected = true;
-            return originalOn(event, (chunk: Buffer) => {
-              chunks.push(chunk);
-              Logger.log(`📥 [WEBHOOK] Получен chunk body, размер: ${chunk.length} байт`);
-            });
-          }
-          if (event === 'end' && chunks.length > 0) {
-            return originalOn(event, () => {
-              const rawBody = Buffer.concat(chunks).toString('utf-8');
-              Logger.log(`📥 [WEBHOOK] Raw body (${rawBody.length} символов): ${rawBody.substring(0, 500)}${rawBody.length > 500 ? '...' : ''}`);
-              try {
-                const parsedBody = JSON.parse(rawBody);
-                Logger.log(`📥 [WEBHOOK] Parsed update: ${JSON.stringify(parsedBody, null, 2)}`);
-              } catch (e) {
-                Logger.warn(`⚠️ [WEBHOOK] Не удалось распарсить body как JSON: ${(e as Error).message}`);
-              }
-              listener();
-            });
-          }
-          return originalOn(event, listener);
-        };
-        
-        // Вызываем оригинальный middleware
-        // webhookCallback сам парсит body и обрабатывает обновления
-        try {
-          await webhookMiddleware(req, res, next);
-          Logger.log(`✅ [WEBHOOK] Middleware обработан успешно`);
-        } catch (error) {
-          Logger.error(`❌ [WEBHOOK] Ошибка в middleware:`, error);
-          Logger.error(`❌ [WEBHOOK] Детали ошибки:`, (error as Error).stack);
-          throw error;
-        }
-      };
-      
       // Регистрируем POST endpoint через Express напрямую
-      expressApp.post(webhookPath, loggingMiddleware);
+      expressApp.post(webhookPath, webhookMiddleware);
       
       Logger.log(`✅ Webhook endpoint зарегистрирован: POST ${webhookPath}`);
-      Logger.log(`🔐 Secret token: ${webhookSecret ? 'установлен' : 'не установлен'}`);
-      Logger.log(`📡 Webhook URL должен быть: ${webhookUrl}${webhookPath}`);
     } catch (error) {
       Logger.error('❌ Ошибка настройки webhook middleware:', error);
       Logger.error('Детали ошибки:', (error as Error).stack);
