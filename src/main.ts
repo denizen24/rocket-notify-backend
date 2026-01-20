@@ -17,6 +17,33 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', true);
 
+  // Настройка webhook middleware ДО запуска сервера
+  // Это нужно, чтобы endpoint был зарегистрирован до того, как сервер начнет слушать
+  const configService = app.get(ConfigService);
+  const webhookUrl = configService.get<string>('TELEGRAM_WEBHOOK_URL');
+  const webhookSecret = configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
+
+  if (webhookUrl && webhookSecret) {
+    try {
+      // Получаем бота после инициализации модулей
+      // NestJS автоматически инициализирует модули при создании приложения
+      const bot = app.get(getBotToken('RocketNotifyBot'));
+      const webhookPath = '/webhook/rocketnotify';
+      
+      // Регистрируем endpoint для обработки POST запросов от Telegram
+      // webhookCallback обрабатывает обновления и передает их в бота
+      expressApp.post(
+        webhookPath,
+        bot.webhookCallback(webhookPath, { secretToken: webhookSecret }),
+      );
+      Logger.log(`✅ Webhook endpoint зарегистрирован: POST ${webhookPath}`);
+      Logger.log(`🔐 Secret token: ${webhookSecret ? 'установлен' : 'не установлен'}`);
+    } catch (error) {
+      Logger.error('❌ Ошибка настройки webhook middleware:', error);
+      Logger.error('Детали ошибки:', (error as Error).stack);
+    }
+  }
+
   // Graceful shutdown
   const gracefulShutdown = async (signal: string) => {
     Logger.log(`📴 Получен сигнал ${signal}, завершение работы...`);
@@ -41,31 +68,6 @@ async function bootstrap() {
   try {
     await app.listen(port);
     Logger.log(`🚀 Приложение запущено на порту ${port}`);
-
-    // Настройка webhook middleware ПОСЛЕ запуска сервера
-    // Это нужно, чтобы все модули были инициализированы
-    const configService = app.get(ConfigService);
-    const webhookUrl = configService.get<string>('TELEGRAM_WEBHOOK_URL');
-    const webhookSecret = configService.get<string>('TELEGRAM_WEBHOOK_SECRET');
-
-    if (webhookUrl && webhookSecret) {
-      try {
-        const bot = app.get(getBotToken('RocketNotifyBot'));
-        const webhookPath = '/webhook/rocketnotify';
-        
-        // Используем expressApp.post() для обработки POST запросов от Telegram
-        // webhookCallback обрабатывает обновления и передает их в бота
-        expressApp.post(
-          webhookPath,
-          bot.webhookCallback(webhookPath, { secretToken: webhookSecret }),
-        );
-        Logger.log(`✅ Webhook endpoint настроен на: POST ${webhookPath}`);
-        Logger.log(`🔐 Secret token: ${webhookSecret ? 'установлен' : 'не установлен'}`);
-      } catch (error) {
-        Logger.error('❌ Ошибка настройки webhook middleware:', error);
-        Logger.error('Детали ошибки:', (error as Error).stack);
-      }
-    }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') {
       Logger.error(
