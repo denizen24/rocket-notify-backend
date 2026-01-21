@@ -51,6 +51,8 @@ export class UserService {
             rcToken: encryptedToken,
             rcUserId: loginRes.userId,
             rcInstanceId: loginRes.instanceId,
+            enabled: true, // Автоматически включаем подписку при создании/обновлении
+            lastUnread: 0, // Сбрасываем счетчик непрочитанных при новой подписке
           },
           { new: true, upsert: false },
         )
@@ -70,6 +72,13 @@ export class UserService {
 
   async getAllEnabledUsers(): Promise<(User & Document)[]> {
     return this.userModel.find({ enabled: true }).exec();
+  }
+
+  /**
+   * Получает всех пользователей из БД
+   */
+  async getAllUsers(): Promise<(User & Document)[]> {
+    return this.userModel.find().exec();
   }
 
   async updateLastUnread(userId: string, lastUnread: number): Promise<void> {

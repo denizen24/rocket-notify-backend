@@ -129,6 +129,12 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
               `[📱 Sent alert to ${user.telegramId}: unread=${unread.total}]`,
             );
           }
+          if (user.lastUnread > 0 || unread.total === 0) {
+            await this.userService.updateLastUnread(
+              user._id.toString(),
+              unread.total,
+            );
+          }
         } catch (error) {
           this.logger.error(
             `[❌ Polling failed for user ${user.telegramId}]`,

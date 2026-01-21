@@ -22,6 +22,13 @@ interface UserResponse {
   createdAt: Date;
 }
 
+interface UsersStatsResponse {
+  total: number;
+  active: number;
+  users: UserResponse[];
+  activeUsers: UserResponse[];
+}
+
 @Controller()
 export class AppController {
   constructor(
@@ -64,9 +71,11 @@ export class AppController {
   }
 
   @Get('users')
-  async getUsers(): Promise<UserResponse[]> {
-    const users = await this.userService.getAllEnabledUsers();
-    return users.map((u: UserWithId) => ({
+  async getUsers(): Promise<UsersStatsResponse> {
+    const allUsers = await this.userService.getAllUsers();
+    const enabledUsers = await this.userService.getAllEnabledUsers();
+
+    const mapUser = (u: UserWithId): UserResponse => ({
       id: u._id.toString(),
       telegramId: u.telegramId,
       rcServer: u.rcServer ?? null,
@@ -74,7 +83,14 @@ export class AppController {
       enabled: u.enabled,
       lastUnread: u.lastUnread,
       createdAt: u.createdAt ?? new Date(),
-    }));
+    });
+
+    return {
+      total: allUsers.length,
+      active: enabledUsers.length,
+      users: allUsers.map(mapUser),
+      activeUsers: enabledUsers.map(mapUser),
+    };
   }
 
   @Post('users/:telegramId/enable')
