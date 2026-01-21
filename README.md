@@ -2,6 +2,14 @@
 
 `rocket-notify-backend` — сервис на NestJS для мультипользовательского мониторинга Rocket.Chat. Каждый пользователь регистрируется через Telegram бота, вводит свои креды Rocket.Chat и получает персональные уведомления о непрочитанных сообщениях в личный Telegram чат.
 
+## Версии проекта rocket-notify-backend
+
+- **Мульти-клиентская версия** (стабильная, замерджена в master)  
+  [Разработка на ветке `multy_client_version`](https://github.com/denizen24/rocket-notify-backend/tree/multy_client_version)
+
+- **Одно-клиентская версия** (для одного клиента)  
+  [Разработка на ветке `single_client_version`](https://github.com/denizen24/rocket-notify-backend/tree/single_client_version)
+
 ## Архитектура
 
 ```
