@@ -1,23 +1,36 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RocketChatService } from './rocket-chat.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { UserService } from '../user/user.service';
+import { QueueService } from '../queue/queue.service';
 
 @Injectable()
 export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RocketChatPollingService.name);
   private intervalId: NodeJS.Timeout | null = null;
-  private lastUnreadTotal = 0;
   private isChecking = false;
   private readonly intervalMs: number;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly rocketChatService: RocketChatService,
-    private readonly telegramService: TelegramService
+    private readonly telegramService: TelegramService,
+    @Inject(forwardRef(() => UserService))
+    private readonly userService: UserService,
+    private readonly queueService: QueueService,
+    private readonly configService: ConfigService,
   ) {
-    const minutes = Number(this.configService.get('POLLING_INTERVAL_MIN', 5));
-    this.intervalMs = Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : 5 * 60 * 1000;
+    // Получаем интервал из переменной окружения (в минутах), по умолчанию 5 минут
+    const intervalMinStr = this.configService.get<string>('POLLING_INTERVAL_MIN', '5');
+    const intervalMin = parseInt(intervalMinStr, 10) || 5;
+    this.intervalMs = intervalMin * 60 * 1000;
   }
 
   onModuleInit(): void {
@@ -33,18 +46,20 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.checkUnread().catch((error) => {
+    this.checkAllUsers().catch((error) => {
       this.logger.error('Ошибка первого цикла polling.', error as Error);
     });
 
     this.intervalId = setInterval(() => {
-      this.checkUnread().catch((error) => {
+      this.checkAllUsers().catch((error) => {
         this.logger.error('Ошибка цикла polling.', error as Error);
       });
     }, this.intervalMs);
 
     this.logger.log('[🚀 Polling started]');
-    this.logger.log(`Интервал: ${Math.round(this.intervalMs / 60000)} мин.`);
+    this.logger.log(
+      `Интервал: ${Math.round(this.intervalMs / 60000)} мин.`,
+    );
   }
 
   private stop(): void {
@@ -55,27 +70,74 @@ export class RocketChatPollingService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Polling остановлен.');
   }
 
-  private async checkUnread(): Promise<void> {
+  private async checkAllUsers(): Promise<void> {
     if (this.isChecking) {
       return;
     }
     this.isChecking = true;
     try {
-      await this.rocketChatService.ensureAuthenticated();
-      const unread = await this.rocketChatService.getUnreadCount();
+      const users = await this.userService.getAllEnabledUsers();
+      this.logger.log(`[📋 Проверка ${users.length} пользователей]`);
 
-      this.logger.log(
-        `[📊 Unread: total=${unread.total}]`
-      );
-
-      if (unread.total > this.lastUnreadTotal) {
-        await this.telegramService.sendUnreadAlert(unread.total);
-        this.logger.log(`[📱 Sent alert: unread=${unread.total}]`);
+      // Если пользователей больше 20, используем очередь
+      if (users.length > 20) {
+        this.logger.log('[📦 Использование очереди для polling]');
+        await this.queueService.schedulePollingForAllUsers(users);
+        return;
       }
 
-      this.lastUnreadTotal = unread.total;
+      // Для малого количества пользователей выполняем синхронно
+      for (const user of users) {
+        if (!user.rcServer || !user.rcToken || !user.rcUserId) {
+          this.logger.warn(`[⚠️ Пользователь ${user.telegramId} не настроен]`);
+          continue;
+        }
+
+        try {
+          // Получаем расшифрованный токен
+          const decryptedToken = await this.userService.getDecryptedToken(
+            user.telegramId,
+          );
+          if (!decryptedToken) {
+            this.logger.warn(
+              `[⚠️ Не удалось расшифровать токен для ${user.telegramId}]`,
+            );
+            continue;
+          }
+
+          const unread = await this.rocketChatService.getUnreadCount(
+            user.rcServer,
+            decryptedToken,
+            user.rcUserId,
+            user.rcInstanceId ?? undefined,
+          );
+
+          this.logger.log(
+            `[📊 User ${user.telegramId}: total=${unread.total}]`,
+          );
+
+          if (unread.total > user.lastUnread) {
+            await this.telegramService.sendUnreadAlert(
+              user.telegramId,
+              unread.total,
+            );
+            await this.userService.updateLastUnread(
+              user._id.toString(),
+              unread.total,
+            );
+            this.logger.log(
+              `[📱 Sent alert to ${user.telegramId}: unread=${unread.total}]`,
+            );
+          }
+        } catch (error) {
+          this.logger.error(
+            `[❌ Polling failed for user ${user.telegramId}]`,
+            error as Error,
+          );
+        }
+      }
     } catch (error) {
-      this.logger.error('Ошибка проверки непрочитанных.', error as Error);
+      this.logger.error('Ошибка проверки пользователей.', error as Error);
     } finally {
       this.isChecking = false;
     }
