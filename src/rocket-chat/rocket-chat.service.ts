@@ -14,17 +14,15 @@ export class RocketChatService {
   private readonly logger = new Logger(RocketChatService.name);
   private readonly http: AxiosInstance;
   private readonly baseUrl: string;
-  private readonly login: string;
-  private readonly password: string;
-
-  private authToken: string | null = null;
-  private userId: string | null = null;
-  private instanceId: string | null = null;
+  private readonly authToken: string;
+  private readonly userId: string;
+  private readonly instanceId: string | null;
 
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = this.getRequired('ROCKET_CHAT_URL').replace(/\/+$/, '');
-    this.login = this.getRequired('ROCKET_CHAT_LOGIN');
-    this.password = this.getRequired('ROCKET_CHAT_PASSWORD');
+    this.userId = this.getRequired('ROCKET_CHAT_ID_USER');
+    this.authToken = this.getRequired('ROCKET_CHAT_TOKEN');
+    this.instanceId = null;
 
     this.http = axios.create({
       baseURL: this.baseUrl,
@@ -33,10 +31,9 @@ export class RocketChatService {
   }
 
   async ensureAuthenticated(): Promise<void> {
-    if (this.authToken && this.userId) {
-      return;
+    if (!this.authToken || !this.userId) {
+      throw new Error('Missing Rocket.Chat auth env variables');
     }
-    await this.loginToRocketChat();
   }
 
   async getSubscriptions(): Promise<any[]> {
@@ -89,54 +86,6 @@ export class RocketChatService {
     };
   }
 
-  private async loginToRocketChat(): Promise<void> {
-    try {
-      const response = await this.http.post(
-        '/api/v1/login',
-        {
-          user: this.login,
-          password: this.password,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const authToken =
-        response.headers['x-auth-token'] ??
-        response.data?.data?.authToken ??
-        response.data?.authToken ??
-        response.data?.data?.['X-Auth-Token'] ??
-        response.data?.['X-Auth-Token'];
-      const userId =
-        response.headers['x-user-id'] ??
-        response.data?.data?.userId ??
-        response.data?.userId ??
-        response.data?.data?.['X-User-Id'] ??
-        response.data?.['X-User-Id'];
-      const instanceId =
-        response.headers['x-instance-id'] ??
-        response.data?.data?.instanceId ??
-        response.data?.instanceId;
-
-      if (!authToken || !userId) {
-        this.logger.error('Не получены токены авторизации от Rocket.Chat.');
-        throw new Error('Rocket.Chat login failed: missing auth headers');
-      }
-
-      this.authToken = authToken;
-      this.userId = userId;
-      this.instanceId = instanceId ?? null;
-      const userLabel = typeof userId === 'string' ? userId.slice(0, 6) : 'unknown';
-      this.logger.log(`[✅ Авторизован в Rocket.Chat: ${userLabel}]`);
-    } catch (error) {
-      this.logger.error('Ошибка авторизации в Rocket.Chat.', error as Error);
-      throw error;
-    }
-  }
-
   private getAuthHeaders(): Record<string, string> {
     if (!this.authToken || !this.userId) {
       throw new Error('Not authenticated');
@@ -162,15 +111,10 @@ export class RocketChatService {
 
     const axiosError = error as AxiosError;
     if (axiosError.response?.status === 401) {
-      this.clearAuth();
-      this.logger.warn('Сессия Rocket.Chat истекла. Требуется повторная авторизация.');
+      this.logger.warn(
+        'Rocket.Chat вернул 401. Проверьте ROCKET_CHAT_ID_USER и ROCKET_CHAT_TOKEN.'
+      );
     }
-  }
-
-  private clearAuth(): void {
-    this.authToken = null;
-    this.userId = null;
-    this.instanceId = null;
   }
 
   private getRequired(key: string): string {
