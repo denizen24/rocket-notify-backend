@@ -11,7 +11,6 @@ import { UserModule } from '../user/user.module';
       imports: [ConfigModule],
       botName: 'RocketNotifyBot',
       useFactory: (config: ConfigService) => {
-        console.log('🔧 [BotModule] Инициализация TelegrafModule...');
         const token = config.get<string>('TELEGRAM_BOT_TOKEN');
         if (!token) {
           throw new Error('Missing required env: TELEGRAM_BOT_TOKEN');
@@ -24,13 +23,15 @@ import { UserModule } from '../user/user.module';
         const options: {
           token: string;
           middlewares: ReturnType<typeof session>[];
-          launchOptions?: false | {
-            webhook?: {
-              domain: string;
-              path: string;
-              secretToken: string;
-            };
-          };
+          launchOptions?:
+            | false
+            | {
+                webhook?: {
+                  domain: string;
+                  path: string;
+                  secretToken: string;
+                };
+              };
         } = {
           token,
           middlewares: [session()],
@@ -42,9 +43,6 @@ import { UserModule } from '../user/user.module';
         if (webhookUrl && webhookSecret) {
           // Отключаем автоматический запуск, чтобы установить webhook вручную
           options.launchOptions = false;
-          console.log(
-            `🌐 Webhook будет настроен на: ${webhookUrl}`,
-          );
         } else {
           console.log('📡 Используется polling режим (webhook не настроен)');
         }
