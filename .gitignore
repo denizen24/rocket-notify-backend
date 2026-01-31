@@ -3,6 +3,8 @@
 /node_modules
 /build
 /temp
+/redis-data
+/mongo-data
 
 
 # Logs
