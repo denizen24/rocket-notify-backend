@@ -33,24 +33,24 @@ export class UserService {
   async updateRocketChatCreds(
     telegramId: string,
     server: string,
-    user: string,
-    pass: string,
+    userId: string,
+    token: string,
   ): Promise<void> {
     try {
-      const loginRes = await this.rocketChatService.login(server, user, pass);
+      // Проверяем доступ по переданным данным
+      await this.rocketChatService.getSubscriptions(server, token, userId);
 
       // Шифруем токен перед сохранением
-      const encryptedToken = this.cryptoService.encrypt(loginRes.authToken);
+      const encryptedToken = this.cryptoService.encrypt(token);
 
       await this.userModel
         .findOneAndUpdate(
           { telegramId },
           {
             rcServer: server,
-            rcUser: user,
             rcToken: encryptedToken,
-            rcUserId: loginRes.userId,
-            rcInstanceId: loginRes.instanceId,
+            rcUserId: userId,
+            rcInstanceId: null,
             enabled: true, // Автоматически включаем подписку при создании/обновлении
             lastUnread: 0, // Сбрасываем счетчик непрочитанных при новой подписке
           },

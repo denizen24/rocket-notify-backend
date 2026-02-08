@@ -38,9 +38,9 @@ export class User extends TimeStamps {
 
   @prop({ required: false, type: Object })
   loginState?: {
-    step: 'server' | 'user' | 'pass';
+    step: 'server' | 'userId' | 'token';
     server?: string;
-    user?: string;
+    userId?: string;
     createdAt: Date;
   };
 }

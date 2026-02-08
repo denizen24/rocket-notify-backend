@@ -129,21 +129,21 @@ export class BotService implements OnModuleInit {
     const args = text.split(' ').slice(1);
     if (args.length !== 3) {
       await ctx.reply(
-        '❌ *Неверный формат*\n\nИспользуйте: `/login <server> <user> <pass>`\n\n*Пример:*\n`/login https://rocketchat.example.com john pass123`',
+        '❌ *Неверный формат*\n\nИспользуйте: `/login <server> <user_id> <token>`\n\n*Пример:*\n`/login https://rocketchat.example.com M4HyfCNf9rnzaFvMK u9sZ...token...`',
         { parse_mode: 'Markdown' },
       );
       return;
     }
 
-    const [server, user, pass] = args;
+    const [server, userId, token] = args;
 
     try {
       await ctx.reply('⏳ Подключаюсь к Rocket.Chat...');
       await this.userService.updateRocketChatCreds(
         telegramId,
         server,
-        user,
-        pass,
+        userId,
+        token,
       );
       await ctx.reply(
         '✅ *Подписка создана!*\n\nУведомления будут приходить сюда при появлении непрочитанных сообщений.',
@@ -152,7 +152,7 @@ export class BotService implements OnModuleInit {
     } catch (e) {
       this.logger.error(`Ошибка авторизации для ${telegramId}`, e as Error);
       await ctx.reply(
-        '❌ *Ошибка авторизации*\n\nПроверьте правильность данных:\n• Сервер\n• Имя пользователя\n• Пароль',
+        '❌ *Ошибка авторизации*\n\nПроверьте правильность данных:\n• Сервер\n• ID пользователя\n• Токен доступа',
         { parse_mode: 'Markdown' },
       );
     }
@@ -284,19 +284,19 @@ export class BotService implements OnModuleInit {
 
           // Сохраняем server и переходим к следующему шагу
           await this.userService.updateLoginState(telegramId, {
-            step: 'user',
+            step: 'userId',
             server,
           });
 
           const userPrompt = `
 ✅ *Сервер сохранен: ${server}*
 
-📝 *Шаг 2 из 3: Имя пользователя*
+📝 *Шаг 2 из 3: ID пользователя*
 
-Введите ваше имя пользователя Rocket.Chat.
+Введите ваш ID пользователя Rocket.Chat.
 
 *Пример:*
-\`john.doe\`
+\`M4HyfCNf9rnzaFvMK\`
 `;
 
           await ctx.reply(userPrompt, {
@@ -310,27 +310,27 @@ export class BotService implements OnModuleInit {
           break;
         }
 
-        case 'user': {
-          const user = text.trim();
-          if (!user) {
-            await ctx.reply('❌ Имя пользователя не может быть пустым.');
+        case 'userId': {
+          const userId = text.trim();
+          if (!userId) {
+            await ctx.reply('❌ ID пользователя не может быть пустым.');
             return;
           }
 
-          // Сохраняем user и переходим к следующему шагу
+          // Сохраняем userId и переходим к следующему шагу
           await this.userService.updateLoginState(telegramId, {
-            step: 'pass',
-            user,
+            step: 'token',
+            userId,
           });
 
           const passPrompt = `
-✅ *Имя пользователя сохранено: ${user}*
+✅ *ID пользователя сохранен: ${userId}*
 
-📝 *Шаг 3 из 3: Пароль*
+📝 *Шаг 3 из 3: Токен доступа*
 
-Введите ваш пароль Rocket.Chat.
+Введите ваш токен доступа Rocket.Chat.
 
-⚠️ *Сообщение с паролем будет автоматически удалено после обработки.*
+⚠️ *Сообщение с токеном будет автоматически удалено после обработки.*
 `;
 
           await ctx.reply(passPrompt, {
@@ -344,27 +344,27 @@ export class BotService implements OnModuleInit {
           break;
         }
 
-        case 'pass': {
-          const pass = text.trim();
-          if (!pass) {
-            await ctx.reply('❌ Пароль не может быть пустым.');
+        case 'token': {
+          const token = text.trim();
+          if (!token) {
+            await ctx.reply('❌ Токен не может быть пустым.');
             return;
           }
 
-          // Удаляем сообщение с паролем для безопасности
+          // Удаляем сообщение с токеном для безопасности
           if (ctx.message && 'message_id' in ctx.message) {
             try {
               await ctx.deleteMessage(ctx.message.message_id);
             } catch (e) {
               this.logger.warn(
-                `Не удалось удалить сообщение с паролем: ${e}`,
+                `Не удалось удалить сообщение с токеном: ${e}`,
               );
             }
           }
 
           // Получаем полное состояние
           const fullState = await this.userService.getLoginState(telegramId);
-          if (!fullState || !fullState.server || !fullState.user) {
+          if (!fullState || !fullState.server || !fullState.userId) {
             await ctx.reply(
               '❌ Ошибка: данные настройки потеряны. Начните заново с /start',
             );
@@ -380,8 +380,8 @@ export class BotService implements OnModuleInit {
             await this.userService.updateRocketChatCreds(
               telegramId,
               fullState.server,
-              fullState.user,
-              pass,
+              fullState.userId,
+              token,
             );
 
             // Удаляем индикатор загрузки
@@ -412,7 +412,7 @@ export class BotService implements OnModuleInit {
               error as Error,
             );
             await ctx.reply(
-              '❌ *Ошибка авторизации*\n\nПроверьте правильность данных:\n• Сервер\n• Имя пользователя\n• Пароль\n\nНачните заново с кнопки "📝 Настроить" в /start',
+              '❌ *Ошибка авторизации*\n\nПроверьте правильность данных:\n• Сервер\n• ID пользователя\n• Токен доступа\n\nНачните заново с кнопки "📝 Настроить" в /start',
               { parse_mode: 'Markdown' },
             );
             await this.userService.clearLoginState(telegramId);

@@ -1,6 +1,6 @@
 export interface LoginState {
-  step: 'server' | 'user' | 'pass';
+  step: 'server' | 'userId' | 'token';
   server?: string;
-  user?: string;
+  userId?: string;
   createdAt: Date;
 }

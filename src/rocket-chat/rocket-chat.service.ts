@@ -18,11 +18,6 @@ export interface UnreadCount {
   groups: number;
 }
 
-export interface LoginResult {
-  authToken: string;
-  userId: string;
-  instanceId?: string | null;
-}
 
 @Injectable()
 export class RocketChatService {
@@ -33,74 +28,6 @@ export class RocketChatService {
       baseURL: baseUrl.replace(/\/+$/, ''),
       timeout: 15000,
     });
-  }
-
-  async login(
-    server: string,
-    user: string,
-    password: string,
-  ): Promise<LoginResult> {
-    const http = this.createHttpClient(server);
-    try {
-      const response = await http.post(
-        '/api/v1/login',
-        {
-          user,
-          password,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      const authToken: string | undefined =
-        (response.headers['x-auth-token'] as string | undefined) ??
-        (response.data as { data?: { authToken?: string }; authToken?: string })
-          ?.data?.authToken ??
-        (response.data as { authToken?: string })?.authToken ??
-        (response.data as { data?: { 'X-Auth-Token'?: string } })?.data?.[
-          'X-Auth-Token'
-        ] ??
-        (response.data as { 'X-Auth-Token'?: string })?.['X-Auth-Token'];
-      const userId: string | undefined =
-        (response.headers['x-user-id'] as string | undefined) ??
-        (response.data as { data?: { userId?: string }; userId?: string })?.data
-          ?.userId ??
-        (response.data as { userId?: string })?.userId ??
-        (response.data as { data?: { 'X-User-Id'?: string } })?.data?.[
-          'X-User-Id'
-        ] ??
-        (response.data as { 'X-User-Id'?: string })?.['X-User-Id'];
-      const instanceId: string | undefined =
-        (response.headers['x-instance-id'] as string | undefined) ??
-        (
-          response.data as {
-            data?: { instanceId?: string };
-            instanceId?: string;
-          }
-        )?.data?.instanceId ??
-        (response.data as { instanceId?: string })?.instanceId;
-
-      if (!authToken || !userId) {
-        this.logger.error('Не получены токены авторизации от Rocket.Chat.');
-        throw new Error('Rocket.Chat login failed: missing auth headers');
-      }
-
-      const userLabel =
-        typeof userId === 'string' ? userId.slice(0, 6) : 'unknown';
-      this.logger.log(`[✅ Авторизован в Rocket.Chat: ${userLabel}]`);
-
-      return {
-        authToken,
-        userId,
-        instanceId: instanceId ?? null,
-      };
-    } catch (error) {
-      this.logger.error('Ошибка авторизации в Rocket.Chat.', error as Error);
-      throw error;
-    }
   }
 
   async getSubscriptions(
