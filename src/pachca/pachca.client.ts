@@ -8,6 +8,7 @@ import {
   PachcaListResponse,
   PachcaMessage,
   PachcaReader,
+  PachcaUnreadIdsResponse,
 } from './pachca.types';
 
 @Injectable()
@@ -15,8 +16,19 @@ export class PachcaApiClient {
   private readonly logger = new Logger(PachcaApiClient.name);
   private readonly baseUrl: string;
   private readonly accessToken: string;
+  private readonly internalBaseUrl: string;
+  private readonly internalCookie: string | null;
   private readonly maxRetries = 3;
   private readonly baseDelayMs = 300;
+  private readonly logLevel: PachcaLogLevel;
+
+  private static readonly levelOrder: Record<PachcaLogLevel, number> = {
+    debug: 10,
+    info: 20,
+    warn: 30,
+    error: 40,
+    none: 100,
+  };
 
   constructor(
     private readonly http: HttpService,
@@ -24,6 +36,11 @@ export class PachcaApiClient {
   ) {
     this.baseUrl = this.getRequired('PACHCA_BASE_URL').replace(/\/+$/, '');
     this.accessToken = this.getRequired('PACHCA_ACCESS_TOKEN');
+    this.internalBaseUrl = this.configService
+      .get<string>('PACHCA_INTERNAL_BASE_URL', 'https://app.pachca.com/api/v3')
+      .replace(/\/+$/, '');
+    this.internalCookie = this.getInternalCookie();
+    this.logLevel = this.getLogLevel();
   }
 
   async getChats(): Promise<PachcaChat[]> {
@@ -48,6 +65,17 @@ export class PachcaApiClient {
     );
   }
 
+  async getUnreadChatIds(): Promise<PachcaId[]> {
+    if (!this.internalCookie) {
+      throw new Error('Missing internal Pachca auth cookie');
+    }
+    return this.requestInternalUnreadIds();
+  }
+
+  canUseInternalApi(): boolean {
+    return Boolean(this.internalCookie);
+  }
+
   private async requestList<T>(
     path: string,
     params?: Record<string, string | number>,
@@ -63,10 +91,28 @@ export class PachcaApiClient {
       return data;
     });
 
-    if (Array.isArray(response)) {
-      return response;
-    }
-    return response?.data ?? response?.items ?? [];
+    const list = Array.isArray(response)
+      ? response
+      : response?.data ?? response?.items ?? [];
+    this.logResponse(path, list);
+    return list;
+  }
+
+  private async requestInternalUnreadIds(): Promise<PachcaId[]> {
+    const path = '/chats/unread_ids';
+    const response = await this.requestWithRetry(async () => {
+      const url = `${this.internalBaseUrl}${path}`;
+      const { data } = await lastValueFrom(
+        this.http.get<PachcaUnreadIdsResponse | PachcaId[]>(url, {
+          headers: this.getInternalHeaders(),
+        }),
+      );
+      return data;
+    });
+
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    this.logResponse(`internal${path}`, list);
+    return list;
   }
 
   private async requestWithRetry<T>(request: () => Promise<T>): Promise<T> {
@@ -81,9 +127,11 @@ export class PachcaApiClient {
         if (attempt > this.maxRetries) {
           throw error;
         }
-        this.logger.warn(
-          `Ошибка запроса к Pachca, попытка ${attempt} из ${this.maxRetries}.`,
-        );
+        if (this.shouldLog('warn')) {
+          this.logger.warn(
+            `Ошибка запроса к Pachca, попытка ${attempt} из ${this.maxRetries}.`,
+          );
+        }
         await this.delay(delayMs);
         delayMs *= 2;
       }
@@ -97,6 +145,42 @@ export class PachcaApiClient {
     };
   }
 
+  private getInternalHeaders(): Record<string, string> {
+    if (!this.internalCookie) {
+      throw new Error('Missing internal Pachca auth cookie');
+    }
+    return {
+      Cookie: this.internalCookie,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  private logResponse(path: string, payload: unknown): void {
+    if (!this.shouldLog('debug')) {
+      return;
+    }
+    const serialized = this.safeSerialize(payload, 2000);
+    this.logger.debug(`Ответ Pachca ${path}: ${serialized}`);
+  }
+
+  private safeSerialize(value: unknown, maxLen: number): string {
+    try {
+      const json = JSON.stringify(value);
+      if (json.length <= maxLen) {
+        return json;
+      }
+      return `${json.slice(0, maxLen)}...`;
+    } catch (error) {
+      if (this.shouldLog('warn')) {
+        this.logger.warn(
+          'Не удалось сериализовать ответ Pachca.',
+          error as Error,
+        );
+      }
+      return '[unserializable]';
+    }
+  }
+
   private async delay(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -108,4 +192,33 @@ export class PachcaApiClient {
     }
     return value;
   }
+
+  private getLogLevel(): PachcaLogLevel {
+    const raw = this.configService.get<string>('PACHCA_LOG_LEVEL', 'warn');
+    if (raw === 'debug' || raw === 'info' || raw === 'warn' || raw === 'error') {
+      return raw;
+    }
+    return 'none';
+  }
+
+  private getInternalCookie(): string | null {
+    const rawCookie = this.configService.get<string>('PACHCA_INTERNAL_COOKIE');
+    if (rawCookie) {
+      return rawCookie;
+    }
+    const jwt = this.configService.get<string>('PACHCA_INTERNAL_JWT');
+    if (!jwt) {
+      return null;
+    }
+    return `jwt=${jwt}`;
+  }
+
+  private shouldLog(level: PachcaLogLevel): boolean {
+    return (
+      PachcaApiClient.levelOrder[level] >=
+      PachcaApiClient.levelOrder[this.logLevel]
+    );
+  }
 }
+
+type PachcaLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';

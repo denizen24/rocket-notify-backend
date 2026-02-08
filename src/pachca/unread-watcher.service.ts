@@ -10,11 +10,12 @@ import { PachcaId } from './pachca.types';
 import { TelegramService } from '../telegram/telegram.service';
 
 @Injectable()
-export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(UnreadWatcher.name);
-  private readonly userId: string;
+export class PachcaUnreadWatcher implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PachcaUnreadWatcher.name);
+  private readonly userId: string | null;
   private readonly intervalMs: number;
   private readonly chatIds: PachcaId[];
+  private readonly useInternalUnreadIds: boolean;
   private intervalId: NodeJS.Timeout | null = null;
   private isChecking = false;
   private lastUnreadTotal = 0;
@@ -24,8 +25,6 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
     private readonly telegramService: TelegramService,
     private readonly configService: ConfigService,
   ) {
-    this.userId = this.getRequired('PACHCA_USER_ID');
-
     const intervalMinStr = this.configService.get<string>(
       'PACHCA_POLLING_INTERVAL_MIN',
       '5',
@@ -35,6 +34,11 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
 
     const chatIdsRaw = this.getRequired('PACHCA_CHAT_IDS');
     this.chatIds = this.parseChatIds(chatIdsRaw);
+    this.useInternalUnreadIds = this.pachcaApiClient.canUseInternalApi();
+    this.userId = this.configService.get<string>('PACHCA_USER_ID') ?? null;
+    if (!this.useInternalUnreadIds && !this.userId) {
+      throw new Error('Missing required env: PACHCA_USER_ID');
+    }
   }
 
   onModuleInit(): void {
@@ -84,6 +88,11 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      if (this.useInternalUnreadIds) {
+        await this.checkChatsByUnreadIds();
+        return;
+      }
+
       let totalUnread = 0;
       const perChatCounts: Array<{ chatId: PachcaId; unread: number }> = [];
 
@@ -97,6 +106,7 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
               continue;
             }
             if (
+              this.userId &&
               message.author_id &&
               String(message.author_id) === String(this.userId)
             ) {
@@ -107,9 +117,11 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
               chatId,
               message.id,
             );
-            const isRead = readers.some(
-              (reader) => String(reader.user_id) === String(this.userId),
-            );
+            const isRead =
+              this.userId &&
+              readers.some(
+                (reader) => String(reader.user_id) === String(this.userId),
+              );
             if (!isRead) {
               chatUnread += 1;
             }
@@ -142,6 +154,27 @@ export class UnreadWatcher implements OnModuleInit, OnModuleDestroy {
     } finally {
       this.isChecking = false;
     }
+  }
+
+  private async checkChatsByUnreadIds(): Promise<void> {
+    const unreadIds = await this.pachcaApiClient.getUnreadChatIds();
+    const unreadSet = new Set(unreadIds.map((id) => String(id)));
+    const watchedUnread = this.chatIds.filter((id) =>
+      unreadSet.has(String(id)),
+    );
+    const totalUnread = watchedUnread.length;
+
+    if (totalUnread > this.lastUnreadTotal) {
+      const details = watchedUnread.map((id) => `Чат ${id}`).join('\n');
+      const message =
+        `🚨 Pachca уведомления\n\n` +
+        `Непрочитано чатов: ${totalUnread}\n` +
+        (details ? `\n${details}` : '');
+
+      await this.telegramService.sendMessage(message);
+    }
+
+    this.lastUnreadTotal = totalUnread;
   }
 
   private parseChatIds(rawValue: string): PachcaId[] {

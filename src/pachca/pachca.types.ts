@@ -23,3 +23,7 @@ export interface PachcaListResponse<T> {
   data?: T[];
   items?: T[];
 }
+
+export interface PachcaUnreadIdsResponse {
+  data?: PachcaId[];
+}

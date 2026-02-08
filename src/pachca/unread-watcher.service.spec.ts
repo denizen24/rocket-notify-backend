@@ -1,13 +1,13 @@
-import { UnreadWatcher } from './unread-watcher.service';
+import { PachcaUnreadWatcher } from './unread-watcher.service';
 import { PachcaApiClient } from './pachca.client';
 import { TelegramService } from '../telegram/telegram.service';
 import { ConfigService } from '@nestjs/config';
 
-describe('UnreadWatcher', () => {
+describe('PachcaUnreadWatcher', () => {
   const userId = 'user-1';
   const chatIds = 'chat-1';
 
-  const createConfigService = (): ConfigService =>
+  const createConfigService = (internal = false): ConfigService =>
     ({
       get: (key: string, defaultValue?: string) => {
         if (key === 'PACHCA_USER_ID') {
@@ -19,6 +19,9 @@ describe('UnreadWatcher', () => {
         if (key === 'PACHCA_POLLING_INTERVAL_MIN') {
           return defaultValue ?? '5';
         }
+        if (key === 'PACHCA_INTERNAL_COOKIE') {
+          return internal ? 'jwt=mocked' : undefined;
+        }
         return defaultValue ?? undefined;
       },
     }) as ConfigService;
@@ -27,6 +30,8 @@ describe('UnreadWatcher', () => {
     const pachcaApiClient = {
       getChatMessages: jest.fn(),
       getMessageReaders: jest.fn(),
+      getUnreadChatIds: jest.fn(),
+      canUseInternalApi: jest.fn().mockReturnValue(false),
     } as unknown as PachcaApiClient;
 
     const telegramService = {
@@ -43,7 +48,7 @@ describe('UnreadWatcher', () => {
     ]);
     pachcaApiClient.getMessageReaders = jest.fn().mockResolvedValue([]);
 
-    const watcher = new UnreadWatcher(
+    const watcher = new PachcaUnreadWatcher(
       pachcaApiClient,
       telegramService,
       createConfigService(),
@@ -67,7 +72,7 @@ describe('UnreadWatcher', () => {
       { user_id: userId },
     ]);
 
-    const watcher = new UnreadWatcher(
+    const watcher = new PachcaUnreadWatcher(
       pachcaApiClient,
       telegramService,
       createConfigService(),
@@ -84,7 +89,7 @@ describe('UnreadWatcher', () => {
       .fn()
       .mockRejectedValue(new Error('API error'));
 
-    const watcher = new UnreadWatcher(
+    const watcher = new PachcaUnreadWatcher(
       pachcaApiClient,
       telegramService,
       createConfigService(),
@@ -92,5 +97,27 @@ describe('UnreadWatcher', () => {
 
     await expect((watcher as any).checkChats()).resolves.toBeUndefined();
     expect(telegramService.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('uses internal unread_ids when available', async () => {
+    const { pachcaApiClient, telegramService } = createMocks();
+    pachcaApiClient.canUseInternalApi = jest.fn().mockReturnValue(true);
+    pachcaApiClient.getUnreadChatIds = jest
+      .fn()
+      .mockResolvedValue(['chat-1']);
+
+    const watcher = new PachcaUnreadWatcher(
+      pachcaApiClient,
+      telegramService,
+      createConfigService(true),
+    );
+
+    await (watcher as any).checkChats();
+
+    expect(pachcaApiClient.getUnreadChatIds).toHaveBeenCalledTimes(1);
+    expect(pachcaApiClient.getChatMessages).not.toHaveBeenCalled();
+    expect(telegramService.sendMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Непрочитано чатов: 1'),
+    );
   });
 });

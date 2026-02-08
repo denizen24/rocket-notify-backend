@@ -33,6 +33,10 @@
 - `PACHCA_USER_ID` — ID пользователя Pachca.
 - `PACHCA_CHAT_IDS` — список ID чатов через запятую.
 - `PACHCA_POLLING_INTERVAL_MIN` — интервал опроса Pachca в минутах.
+- `PACHCA_LOG_LEVEL` — уровень логирования Pachca (`debug` | `info` | `warn` | `error` | `none`).
+- `PACHCA_INTERNAL_BASE_URL` — base URL внутреннего API Pachca (по умолчанию `https://app.pachca.com/api/v3`).
+- `PACHCA_INTERNAL_COOKIE` — cookie для доступа к внутреннему API (`jwt=...`).
+- `PACHCA_INTERNAL_JWT` — JWT значение (будет преобразовано в `jwt=<value>` если `PACHCA_INTERNAL_COOKIE` не задан).
 - `TELEGRAM_BOT_TOKEN` — токен Telegram‑бота.
 - `TELEGRAM_CHANNEL_ID` — ID канала/чата.
 
